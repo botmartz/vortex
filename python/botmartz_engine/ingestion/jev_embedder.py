@@ -89,13 +89,31 @@ class JEVLateChunker:
             return _deterministic_semantic_projection(query, dims=target_dim)
         return vec
 
-    def build_jev_chunks(self, ast: DocumentAST) -> List[JEVChunkMetadata]:
-        """Compute full-document global anchor + AST node spans + hierarchical parent residual blend."""
+    def build_jev_chunks(
+        self,
+        ast: DocumentAST,
+        existing_chunks: Optional[Dict[str, JEVChunkMetadata]] = None,
+        deltas: Optional[List[Any]] = None,
+    ) -> List[JEVChunkMetadata]:
+        """Compute full-document global anchor + AST node spans + hierarchical parent residual blend.
+        
+        Optimized via O(Delta) Merkle diff: reuses existing chunk vectors when a node's content_hash is unchanged.
+        """
         ordered_nodes: List[ASTNode] = [
             node for node in ast.nodes.values() if node.node_type != ASTNodeType.DOCUMENT
         ]
         if not ordered_nodes:
             return []
+
+        # Check which nodes actually need embedding computation
+        existing_lookup = existing_chunks or {}
+        nodes_to_embed: List[ASTNode] = []
+        for node in ordered_nodes:
+            cid = f"jev::{node.node_id}"
+            cached = existing_lookup.get(cid)
+            if cached is not None and cached.merkle_hash == node.merkle_hash and cached.embedding is not None:
+                continue
+            nodes_to_embed.append(node)
 
         # Build full document summary anchor so every chunk sees global cross-chunk context
         full_doc_text = "\n".join(
@@ -103,21 +121,30 @@ class JEVLateChunker:
         )
         span_texts = [
             f"[{' > '.join(n.structural_path)}] {n.title or ''} {n.content}".strip()
-            for n in ordered_nodes
+            for n in nodes_to_embed
         ]
         all_texts = [full_doc_text] + span_texts
         all_vecs, backbone_name = self.embed_batch(all_texts)
 
         doc_global_vec = all_vecs[0]
-        raw_node_vecs: Dict[str, np.ndarray] = {
-            node.node_id: vec for node, vec in zip(ordered_nodes, all_vecs[1:])
+        delta_vecs: Dict[str, np.ndarray] = {
+            node.node_id: vec for node, vec in zip(nodes_to_embed, all_vecs[1:])
         }
 
         # Top-down hierarchical blending: blend child span with parent's blended vector + global context
         blended_vecs: Dict[str, np.ndarray] = {}
         alpha = self.parent_blend_alpha
         for node in sorted(ordered_nodes, key=lambda n: n.depth):
-            span_vec = raw_node_vecs[node.node_id]
+            cid = f"jev::{node.node_id}"
+            cached = existing_lookup.get(cid)
+
+            if node.node_id in delta_vecs:
+                span_vec = delta_vecs[node.node_id]
+            elif cached is not None and cached.embedding is not None:
+                span_vec = np.array(cached.embedding, dtype=np.float32)
+            else:
+                span_vec = _deterministic_semantic_projection(node.content, dims=len(doc_global_vec))
+
             parent_vec = (
                 blended_vecs.get(node.parent_id, doc_global_vec)
                 if node.parent_id

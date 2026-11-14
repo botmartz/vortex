@@ -246,6 +246,22 @@ async def ingest_database_source(req: DBIngestRequest) -> JSONResponse:
         if not req.sqlite_path:
             return JSONResponse(status_code=400, content={"error": "sqlite_path is required when source_type='sqlite'"})
         db_file = Path(req.sqlite_path).expanduser().resolve()
+        
+        # Security Issue #2: Restrict SQLite file ingest to authorized directory
+        allowed_dir = (settings.data_dir / "imports").resolve()
+        allowed_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            db_file.relative_to(allowed_dir)
+        except ValueError:
+            # Also allow files located directly inside settings.data_dir
+            try:
+                db_file.relative_to(settings.data_dir.resolve())
+            except ValueError:
+                return JSONResponse(
+                    status_code=403,
+                    content={"error": f"Access denied: SQLite files must be placed inside {allowed_dir} or {settings.data_dir}."},
+                )
+
         if not db_file.is_file():
             return JSONResponse(status_code=404, content={"error": f"SQLite file not found: {db_file}"})
         sql = (req.query or f'SELECT * FROM "{safe_table}" LIMIT 200').strip()

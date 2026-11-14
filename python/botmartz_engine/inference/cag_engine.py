@@ -248,10 +248,15 @@ class MultiProviderInferenceEngine:
         if (provider in {"gemini", "default"} or not provider) and settings.gemini_api_key:
             try:
                 g_model = custom_model or settings.gemini_model or "gemini-2.5-flash"
-                g_url = f"https://generativelanguage.googleapis.com/v1beta/models/{g_model}:generateContent?key={settings.gemini_api_key}"
+                g_url = f"https://generativelanguage.googleapis.com/v1beta/models/{g_model}:generateContent"
+                headers = {
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": settings.gemini_api_key,
+                }
                 with httpx.Client(timeout=20.0) as client:
                     resp = client.post(
                         g_url,
+                        headers=headers,
                         json={
                             "system_instruction": {"parts": [{"text": SYSTEM_CONSTITUTION}]},
                             "contents": [{"parts": [{"text": user_prompt}]}],

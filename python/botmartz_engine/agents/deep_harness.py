@@ -582,21 +582,35 @@ class RAGFlowSideBySideDuel:
         sample_markdown: Optional[str] = None,
         provider: str = "openai",
     ) -> Dict[str, Any]:
-        if sample_markdown and sample_markdown.strip():
-            engine_graph.ingest_markdown(
-                doc_id="duel_eval_doc",
-                uri="duel://submitted_eval.md",
-                markdown_text=sample_markdown.strip(),
-                version=1,
-            )
+        added_eval_doc = False
+        try:
+            if sample_markdown and sample_markdown.strip():
+                engine_graph.ingest_markdown(
+                    doc_id="duel_eval_doc",
+                    uri="duel://submitted_eval.md",
+                    markdown_text=sample_markdown.strip(),
+                    version=1,
+                )
+                added_eval_doc = True
 
-        ragflow_side = cls._ragflow_simulated_pipeline(engine_graph, query=query)
-        vortex_run = deep_harness.run(
-            query=query,
-            agent_id="vortex-deep-supervisor",
-            provider=provider,
-            enable_speculative=True,
-        )
+            ragflow_side = cls._ragflow_simulated_pipeline(engine_graph, query=query)
+            vortex_run = deep_harness.run(
+                query=query,
+                agent_id="vortex-deep-supervisor",
+                provider=provider,
+                enable_speculative=True,
+            )
+        finally:
+            if added_eval_doc:
+                # Cleanup evaluation document so it does not pollute the primary knowledge base
+                engine_graph.state.documents.pop("duel_eval_doc", None)
+                # Cleanup JEV chunks and store records for duel_eval_doc
+                to_delete_chunks = [
+                    cid for cid, c in engine_graph.state.store.jev_chunks.items() if c.doc_id == "duel_eval_doc"
+                ]
+                for cid in to_delete_chunks:
+                    engine_graph.state.store.jev_chunks.pop(cid, None)
+                    engine_graph.state.store.bm25_corpus.pop(cid, None)
 
         # Also measure single-node BLAKE3 mutation skip vs RAGFlow O(N)
         sample_ast_docs = list(engine_graph.state.documents.values())

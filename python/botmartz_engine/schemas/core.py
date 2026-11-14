@@ -265,7 +265,7 @@ class DeterministicTableMapper:
         try:
             import duckdb  # type: ignore
 
-            self._conn = duckdb.connect(db_path)
+            self._conn = duckdb.connect(db_path, config={"enable_external_access": False})
             self._backend = "duckdb"
         except ImportError:
             self._conn = sqlite3.connect(db_path, check_same_thread=False)
@@ -300,10 +300,34 @@ class DeterministicTableMapper:
 
     def execute_readonly_sql(self, sql: str) -> List[Dict[str, Any]]:
         """Execute a deterministic read-only analytical query for KAG synthesis."""
-        normalized = sql.strip().upper()
+        cleaned = sql.strip().rstrip(";")
+        if not cleaned:
+            return []
+
+        if self._backend == "duckdb":
+            import duckdb
+
+            try:
+                stmts = duckdb.extract_statements(cleaned)
+                if len(stmts) != 1:
+                    raise PermissionError(f"KAG SQL query must be exactly one statement. Detected {len(stmts)} statements.")
+            except Exception as e:
+                if isinstance(e, PermissionError):
+                    raise
+                # if extract_statements raises a syntax error, let duckdb execution handle or fail
+                pass
+
+        normalized = cleaned.upper().lstrip()
         if not (normalized.startswith("SELECT") or normalized.startswith("WITH")):
-            raise PermissionError("KAG DeterministicTableMapper only permits SELECT/WITH queries.")
+            raise PermissionError("KAG DeterministicTableMapper only permits SELECT or WITH queries.")
+
+        # Disallow dangerous SQL tokens in read-only analytical mode
+        forbidden_tokens = ["DROP ", "DELETE ", "UPDATE ", "INSERT ", "ALTER ", "TRUNCATE ", "EXEC ", "EXECUTE "]
+        for tok in forbidden_tokens:
+            if tok in normalized:
+                raise PermissionError(f"Forbidden data manipulation token detected: {tok.strip()}")
+
         with self._lock:
-            cursor = self._conn.execute(sql)
+            cursor = self._conn.execute(cleaned)
             col_names = [desc[0] for desc in cursor.description] if cursor.description else []
             return [dict(zip(col_names, row)) for row in cursor.fetchall()]

@@ -70,8 +70,13 @@ class IngestionAgent:
     ) -> Tuple[DocumentAST, List[Tuple[DuckDBTableSchema, List[Dict[str, Any]]]], Dict[str, Any]]:
         return self.ingestor.ingest_file_bytes(doc_id=doc_id, filename=filename, raw_bytes=raw_bytes, version=version)
 
-    def build_jev_late_chunks(self, ast: DocumentAST) -> List[Any]:
-        return self.jev_chunker.build_jev_chunks(ast)
+    def build_jev_late_chunks(
+        self,
+        ast: DocumentAST,
+        existing_chunks: Optional[Dict[str, Any]] = None,
+        deltas: Optional[List[Any]] = None,
+    ) -> List[Any]:
+        return self.jev_chunker.build_jev_chunks(ast, existing_chunks=existing_chunks, deltas=deltas)
 
 
 class StorageIndexAgent:
@@ -301,8 +306,14 @@ class BotmartzDelegationGraph:
         if tables:
             all_tables.extend(tables)
 
-        jev_chunks = self.ingestion_agent.build_jev_late_chunks(ast)
-        deltas = self.storage_agent.ingest_or_update(self.state, ast, jev_chunks, tables=all_tables)
+        old_doc = self.state.documents.get(doc_id)
+        deltas = old_doc.diff(ast) if old_doc is not None else []
+        jev_chunks = self.ingestion_agent.build_jev_late_chunks(
+            ast,
+            existing_chunks=self.state.store.jev_chunks,
+            deltas=deltas,
+        )
+        self.storage_agent.ingest_or_update(self.state, ast, jev_chunks, tables=all_tables)
 
         summary = {
             "doc_id": doc_id,
@@ -327,8 +338,14 @@ class BotmartzDelegationGraph:
         ast, parsed_tables, parser_meta = self.ingestion_agent.parse_file_bytes(
             doc_id=doc_id, filename=filename, raw_bytes=raw_bytes, version=version
         )
-        jev_chunks = self.ingestion_agent.build_jev_late_chunks(ast)
-        deltas = self.storage_agent.ingest_or_update(self.state, ast, jev_chunks, tables=parsed_tables)
+        old_doc = self.state.documents.get(doc_id)
+        deltas = old_doc.diff(ast) if old_doc is not None else []
+        jev_chunks = self.ingestion_agent.build_jev_late_chunks(
+            ast,
+            existing_chunks=self.state.store.jev_chunks,
+            deltas=deltas,
+        )
+        self.storage_agent.ingest_or_update(self.state, ast, jev_chunks, tables=parsed_tables)
 
         summary = {
             "doc_id": doc_id,

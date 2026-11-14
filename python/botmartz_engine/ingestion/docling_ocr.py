@@ -401,6 +401,27 @@ class UniversalDocumentIngestor:
         if in_table:
             _flush_table(offset)
 
+        # Issue #7: Flush any unclosed code block so subsequent text/lines are not lost
+        if in_code and code_lines:
+            code_idx += 1
+            parent = section_stack[-1]
+            node_id = f"{doc_id}::code_{code_idx}"
+            full_code = "\n".join(code_lines)
+            node = ASTNode(
+                node_id=node_id,
+                doc_id=doc_id,
+                node_type=ASTNodeType.CODE_BLOCK,
+                title=f"Code Block {code_idx}",
+                content=full_code,
+                depth=parent.depth + 1,
+                structural_path=parent.structural_path + [f"code_{code_idx}"],
+                parent_id=parent.node_id,
+                char_span=(code_start, offset),
+            )
+            _attach(parent, node)
+            in_code = False
+            code_lines = []
+
         ast = DocumentAST(doc_id=doc_id, uri=uri, version=version, root_id=root_id, nodes=nodes)
         ast.compute_merkle_tree()
         return ast, extracted_tables
