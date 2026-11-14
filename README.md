@@ -18,9 +18,10 @@
 
 <p align="center">
   <a href="#quickstart">Quickstart</a> •
-  <a href="#botmartz-open-source-suite">The Botmartz Ecosystem</a> •
-  <a href="#enterprise-deployment-docker--k8s">Docker & Kubernetes</a> •
-  <a href="#benchmark-vs-ragflow">Benchmark vs RAGFlow</a> •
+  <a href="#the-botmartz-open-source-ecosystem">The Botmartz Ecosystem</a> •
+  <a href="#architectural-highlights">Architectural Highlights</a> •
+  <a href="#side-by-side-benchmarking">Benchmarking With RAGFlow</a> •
+  <a href="#docker--kubernetes">Docker & Kubernetes</a> •
   <a href="#contributing">Contributing</a>
 </p>
 
@@ -28,97 +29,108 @@
 
 ## What is Botmartz VORTEX?
 
-**VORTEX** is an open-source, enterprise-grade Omni-RAG and Deep Agent Harness engine designed to replace bloated multi-container stacks (such as RAGFlow and Dify) with a **high-performance, zero-sprawl single runtime**.
+**Botmartz VORTEX** is an open-source, enterprise-grade Omni-RAG and Deep Agent Harness engine built for developers who need **high retrieval fidelity**, **cryptographic update efficiency**, and **deterministic mathematical precision** without the heavy operational overhead of multi-container microservice stacks.
 
-### Why Developers & Enterprises Choose VORTEX:
+Whether you run on a lightweight developer laptop or scale into enterprise Kubernetes clusters, VORTEX runs in a **compact single process (<500 MB idle memory)** that natively embeds Rust tokenization, LanceDB vector storage, DuckDB 2.0 analytical processing, and an SQLite WAL state machine.
 
-1. **Zero Ops Sprawl (<500 MB Idle Memory)**: Runs as a single process combining a native Rust core, LanceDB vector index, DuckDB 2.0 analytical engine, and SQLite WAL. No required Elasticsearch, MySQL, MinIO, or Redis containers.
-2. **$O(\Delta)$ BLAKE3 Merkle Tree Mutation**: Only re-embeds mutated subtrees when documents change, skipping **~88.9%** of redundant embedding and compute costs.
-3. **Deterministic Math (DuckDB KAG)**: Eliminates tabular hallucination. Numerical questions compile automatically into DuckDB OLAP SQL queries for 100% exact math.
-4. **Hierarchical Document Trees (H-RAG & JEV)**: Preserves document ASTs and calculates late-chunking embeddings over full-document attention matrices before chunk pooling.
-5. **SmithDB & Pregel BSP Agent Harness**: Built-in 4-superstep state graph with immutable checkpointing, waterfall span traces, and time-travel replay.
-6. **Multi-Model Routing**: Native **Gemini First (Google AI Primary)**, cascading smoothly to **Ollama**, **llama.cpp server**, or **OpenAI/vLLM/SGLang**.
+---
+
+## ⚡ Architectural Highlights
+
+1. **Compact Single-Process Runtime**: Designed for zero ops sprawl. Boots in seconds locally without requiring external database containers or distributed orchestrators.
+2. **$O(\Delta)$ BLAKE3 Merkle AST Diffing**: When documents or legal contracts update, VORTEX computes a Merkle diff over the document's Abstract Syntax Tree. Only modified subtrees are re-indexed, saving significant compute and embedding API costs.
+3. **Deterministic Math (DuckDB KAG)**: Questions requiring calculations, aggregations, or spreadsheet data compile directly into in-memory DuckDB OLAP SQL queries for mathematically verified answers.
+4. **Hierarchical Document Trees (H-RAG & JEV)**: Retains parent-child document hierarchy and applies late-chunking embeddings across full-document attention matrices before chunk pooling to eliminate context clipping.
+5. **SmithDB & Pregel BSP Agent Harness**: Features a 4-superstep state machine with immutable checkpointing, waterfall span traces, and time-travel replay.
+6. **Provider Agnostic**: Configurable for **Google Gemini (Primary)**, local **Ollama** (`gpt-oss:120b`, Llama 3), **llama.cpp server**, or **OpenAI/vLLM/SGLang**.
 
 ---
 
 ## 🌐 The Botmartz Open-Source Ecosystem
 
-VORTEX is part of the interconnected **Botmartz AI Systems** suite:
+VORTEX operates alongside our specialized companion repositories:
 
-| Repository | Role in the Ecosystem |
+| Repository | Focus & Role |
 | :--- | :--- |
 | **[botmartz/vortex](https://github.com/botmartz/vortex)** | **Core Engine**: Zero-sprawl Omni-RAG, H-RAG AST, DuckDB SQL, and React 19 Studio. |
-| **[botmartz/llamaparse-pgvector-pipeline](https://github.com/botmartz/llamaparse-pgvector-pipeline)** | **Ingestion Pipeline**: Vision-based AST layout & table extraction for complex PDFs and 10-K balance sheets. |
-| **[botmartz/mcp-postgres-wal-server](https://github.com/botmartz/mcp-postgres-wal-server)** | **Enterprise State Server**: MCP protocol server for PostgreSQL WAL checkpoints and Saga rollback transactions. |
+| **[botmartz/llamaparse-pgvector-pipeline](https://github.com/botmartz/llamaparse-pgvector-pipeline)** | **Specialized Ingestion**: Vision-based AST layout & table extraction for complex PDFs and SEC 10-K balance sheets into PostgreSQL. |
+| **[botmartz/mcp-postgres-wal-server](https://github.com/botmartz/mcp-postgres-wal-server)** | **Enterprise State Server**: MCP protocol server for PostgreSQL WAL checkpoints and Saga rollback transactions for distributed teams. |
 
 ---
 
-## ⚡ Quickstart
+## 🚀 Quickstart
 
-### Method 1: Local Python & Bun (Recommended for Development)
-
+### 1. Clone & Configure
 ```bash
-# 1. Clone
 git clone https://github.com/botmartz/vortex.git
 cd vortex
 
-# 2. Python Environment
+# Copy the environment template
+cp .env.example .env
+```
+*(Open `.env` and configure your preferred model provider, such as your Gemini or OpenAI API key, or leave blank to use local Ollama / llama.cpp).*
+
+### 2. Python Environment & Dependencies
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
+```
 
-# 3. Build React Studio
-cd web && bun install && bun run build && cd ..
+### 3. Build the React 19 Studio UI
+```bash
+cd web
+bun install && bun run build
+cd ..
+```
 
-# 4. Start VORTEX Engine & Studio
+### 4. Launch the Engine
+```bash
 uvicorn botmartz_engine.api.server:app --host 127.0.0.1 --port 8420
 ```
-Open **`http://127.0.0.1:8420`** in your browser.
+Open **`http://127.0.0.1:8420`** in your browser to access the **Editorial Light Studio**.
 
 ---
 
-## 🐳 Enterprise Deployment: Docker & Kubernetes
+## 🔬 Side-by-Side Benchmarking: Test Both VORTEX & RAGFlow
 
-### 1. Single Container Run (Zero-Sprawl)
+We believe the best way for developers to evaluate retrieval architectures is through open, empirical testing. 
+
+Infiniflow's **RAGFlow** is an impressive and widely adopted platform with strong deep document vision capabilities. In VORTEX Studio, we included a built-in **Live Duel & Benchmark Tab** where developers can run side-by-side queries across both architectural approaches:
+- **Try RAGFlow**: Test how full-document re-indexing and deep vision parsing perform on your document set.
+- **Try VORTEX**: Compare how $O(\Delta)$ Merkle diffing and in-memory DuckDB OLAP SQL handle the same workload.
+- **Benchmark Metrics**: Inspect latency, memory footprint, and numerical query precision on your own hardware.
+
+---
+
+## 🐳 Docker & Kubernetes
+
+### Single Container Run
+```bash
+docker compose up -d
+```
+Or run directly:
 ```bash
 docker run -d \
   --name botmartz-vortex \
   -p 8420:8420 \
   -v vortex_data:/app/data \
-  -e GEMINI_API_KEY="your-gemini-key" \
+  --env-file .env \
   botmartz/vortex:latest
 ```
 
-### 2. Docker Compose
-```bash
-docker compose up -d
-```
-
-### 3. Enterprise Kubernetes / Helm
-For enterprise high-availability clusters, mount a shared NFS or cloud persistent volume (`PVC`) to `/app/data` and configure `VORTEX_SMITHDB_URL` to point to external PostgreSQL clusters using `mcp-postgres-wal-server`.
-
 ---
 
-## 📊 Benchmark: VORTEX vs. Infiniflow RAGFlow
+## 🤝 Community Feedback & Contributing
 
-| Feature | Infiniflow RAGFlow | Botmartz VORTEX v0.3 | Advantage |
-| :--- | :--- | :--- | :--- |
-| **Idle Memory Footprint** | 7–14 Docker containers (8–16 GB RAM) | 1 local process (< 500 MB RAM) | **95% less RAM, instant boot** |
-| **Document Mutation Cost** | $O(N)$ full re-index (0% skipped) | $O(\Delta)$ BLAKE3 Merkle diff (~88.9% skipped) | **~90% compute cost reduction** |
-| **Tabular Math Precision** | Markdown text snippet (LLM guessing) | Embedded DuckDB 2.0 OLAP SQL | **100% exact numerical accuracy** |
-| **Cross-Chunk Context** | Flat delimiter cuts | H-RAG AST + JEV Late Chunking | **Zero chunk-context blindness** |
-| **Agent State & Replay** | MySQL/Redis task queues | Built-in SmithDB (Checkpoints & Replay) | **Built-in time-travel debugging** |
-| **Model Connectivity** | Proprietary wrappers | Gemini First + Ollama + llama.cpp + vLLM | **Total freedom of compute** |
+We warmly invite the AI and RAG community to test VORTEX on diverse enterprise corpora, challenge our benchmarks, and share your feedback!
 
----
-
-## 🤝 Community & Contributor Callout
-
-We are actively inviting developers, researchers, and enterprises to test, benchmark, and contribute!
-
-- **Read the [Contributor Guidelines (CONTRIBUTING.md)](./CONTRIBUTING.md)**.
-- **Open an Issue / Feature Request**: Submit bug reports, benchmark logs, and feature proposals on our [GitHub Issues tracker](https://github.com/botmartz/vortex/issues).
-- **Core Roadmap Items**: Notion/SharePoint connectors, Whisper audio integration, and visual DAG builders.
+- Read our **[Contributor Guidelines (CONTRIBUTING.md)](./CONTRIBUTING.md)**.
+- Report observations, ask questions, or propose RFCs via **[GitHub Issues](https://github.com/botmartz/vortex/issues)**.
+- High-priority community roadmap:
+  - Connectors: Notion, SharePoint, Google Drive, and Confluence.
+  - Multimodal: Native Whisper/WhisperX audio alignment into AST nodes.
+  - UI: Interactive drag-and-drop workflow DAG builder.
 
 ## 📄 License
 Licensed under the [Apache License, Version 2.0](./LICENSE). Maintained by [Botmartz AI Solutions](https://www.botmartz.com).

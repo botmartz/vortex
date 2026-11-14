@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-REPO_DIR="/run/media/soham/D Drive/botmartz/botmartz-engine"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_DIR"
 
 if [ ! -d ".git" ]; then

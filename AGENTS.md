@@ -1,6 +1,6 @@
 # Botmartz Omni-RAG & Autonomous Generation Engine (`AGENTS.md`)
 
-You are operating inside the **Botmartz Omni-RAG & Autonomous Generation Engine** workspace (`/run/media/soham/D Drive/botmartz/botmartz-engine`).
+You are operating inside the **Botmartz Omni-RAG & Autonomous Generation Engine** repository.
 
 ## Core Architectural Pillars
 1. **H-RAG (Hierarchical Document Trees)**: AST-based structural parsing and parent-child-sibling tree traversal instead of flat lossy chunks.

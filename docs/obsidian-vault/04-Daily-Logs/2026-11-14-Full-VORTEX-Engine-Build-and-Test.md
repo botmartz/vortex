@@ -117,7 +117,7 @@ Result: 4 passed; 0 failed; 0 ignored; finished in 0.00s
 ```text
 ============================= test session starts ==============================
 platform linux -- Python 3.12.16, pytest-9.2.0, pluggy-1.7.0
-rootdir: /run/media/soham/D Drive/botmartz/botmartz-engine
+rootdir: ./botmartz-engine
 configfile: pyproject.toml
 collected 3 items
 

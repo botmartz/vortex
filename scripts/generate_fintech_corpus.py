@@ -2,7 +2,8 @@
 import json
 from pathlib import Path
 
-DATA_DIR = Path("/run/media/soham/D Drive/botmartz/botmartz-engine/data/sample_industry_fintech")
+BASE_DIR = Path(__file__).resolve().parents[1]
+DATA_DIR = BASE_DIR / "data" / "sample_industry_fintech"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # 1. Complex Policy & Compliance Doc (Text + Deep AST)
