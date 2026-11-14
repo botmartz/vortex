@@ -1,0 +1,9 @@
+[package]
+name = "botmartz-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+botmartz-ast = { path = "../botmartz-ast" }
+botmartz-storage = { path = "../botmartz-storage" }
+botmartz-mcp = { path = "../botmartz-mcp" }
