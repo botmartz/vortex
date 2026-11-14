@@ -160,7 +160,7 @@ export default function App() {
         <div className="brand-block">
           <div className="brand-symbol">V</div>
           <span className="brand-title">Botmartz VORTEX</span>
-          <span className="brand-badge">v0.3.0</span>
+          <span className="brand-badge">v1.0</span>
         </div>
 
         <nav className="main-nav">

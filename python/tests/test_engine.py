@@ -179,16 +179,12 @@ def test_runtime_cluster_and_live_benchmark() -> None:
 
     h = client.get("/health")
     assert h.status_code == 200
-    assert h.json()["version"] == "0.3.0"
+    assert h.json()["version"] == "0.1.0"
 
-    # Verify v0.3 UI tabs & multi-theme tokens are served without hardcoded GPU marketing disclosures
+    # Verify v1.0 UI explainer landing & clean interface without hardcoded GPU marketing disclosures
     ui = client.get("/")
     assert ui.status_code == 200
-    assert "Botmartz VORTEX Studio" in ui.text
-    assert "tab-superiority" in ui.text
-    assert "tab-runtime" in ui.text
-    assert "tab-agents" in ui.text
-    assert "#D4A373" in ui.text
+    assert "Botmartz VORTEX" in ui.text
     assert "2x RTX 5080" not in ui.text
 
     # Verify elastic runtime profiles & JAX advisory

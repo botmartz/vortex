@@ -25,7 +25,7 @@ from .seed import seed_default_corpus
 
 app = FastAPI(
     title="Botmartz VORTEX — Frontier Omni-RAG & Deep Agent Harness Engine",
-    version="0.3.0",
+    version="0.1.0",
     description="H-RAG + JEV + CAG Radix + KAG DuckDB + BLAKE3 + SmithDB + Pregel Deep Harness + A2A + MCP",
 )
 
@@ -194,7 +194,7 @@ async def health() -> Dict[str, Any]:
     return {
         "status": "ok",
         "engine": "botmartz-vortex",
-        "version": "0.3.0",
+        "version": "0.1.0",
         "kag_backend": engine_graph.state.table_mapper.backend,
         "lancedb_connected": engine_graph.state.store.lancedb_connected,
         "indexed_documents": len(engine_graph.state.documents),
