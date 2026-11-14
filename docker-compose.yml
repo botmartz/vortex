@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  vortex:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: botmartz/vortex:latest
+    container_name: botmartz-vortex
+    restart: unless-stopped
+    ports:
+      - "8420:8420"
+    environment:
+      - VORTEX_PORT=8420
+      - VORTEX_DATA_DIR=/app/data
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+    volumes:
+      - vortex_data:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  vortex_data:
