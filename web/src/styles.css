@@ -471,14 +471,14 @@ table.clean-table th {
 }
 
 .app-sidebar {
-  width: 250px;
+  width: 260px;
   flex-shrink: 0;
   background: var(--bg-sheet);
   border-right: 1px solid var(--border-hairline);
-  padding: 20px 14px;
+  padding: 24px 16px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 24px;
 }
 
 .sidebar-section-title {
