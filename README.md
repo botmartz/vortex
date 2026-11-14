@@ -33,6 +33,10 @@
 
 Whether you run on a lightweight developer laptop or scale into enterprise Kubernetes clusters, VORTEX runs in a **compact single process (<500 MB idle memory)** that natively embeds Rust tokenization, LanceDB vector storage, DuckDB 2.0 analytical processing, and an SQLite WAL state machine.
 
+<p align="center">
+  <img src="./docs/assets/vortex-ui-preview.png" alt="Botmartz VORTEX Studio UI Preview" width="100%" style="border-radius: 8px; border: 1px solid #E5E2DC;" />
+</p>
+
 ---
 
 ## ⚡ Architectural Highlights
