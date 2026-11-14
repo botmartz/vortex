@@ -35,6 +35,10 @@ export default function App() {
   // Ingest / Data State
   const [docId, setDocId] = useState("");
   const [docContent, setDocContent] = useState("");
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadDocId, setUploadDocId] = useState("");
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState("");
   const [docsList, setDocsList] = useState<Array<{ doc_id: string; uri: string; node_count: number }>>([]);
   const [tablesList, setTablesList] = useState<string[]>([]);
   const [ingestBusy, setIngestBusy] = useState(false);
@@ -153,45 +157,38 @@ export default function App() {
     }
   };
 
+  const handleFileUpload = async () => {
+    if (!uploadFile) return;
+    setUploadBusy(true);
+    setUploadMsg("");
+    try {
+      const targetDocId = uploadDocId.trim() || uploadFile.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_");
+      const fd = new FormData();
+      fd.append("doc_id", targetDocId);
+      fd.append("version", "1");
+      fd.append("file", uploadFile);
+
+      const res = await vortexApi.ingestFile(fd);
+      setUploadMsg(`Successfully imported ${uploadFile.name}: ${res.ast_node_count || res.nodes || 0} AST nodes, ${res.jev_chunk_count || 0} JEV chunks.`);
+      setUploadFile(null);
+      setUploadDocId("");
+      await refreshAll();
+    } catch (err: any) {
+      setUploadMsg(`Import failed: ${err.message || String(err)}`);
+    } finally {
+      setUploadBusy(false);
+    }
+  };
+
   return (
     <div>
-      {/* Header & Clean Navigation */}
+      {/* Top Header */}
       <header className="app-header">
         <div className="brand-block">
           <div className="brand-symbol">V</div>
           <span className="brand-title">Botmartz VORTEX</span>
           <span className="brand-badge">v1.0</span>
         </div>
-
-        <nav className="main-nav">
-          <button
-            className={`nav-tab-btn ${activeTab === "explainer" ? "active" : ""}`}
-            onClick={() => setActiveTab("explainer")}
-          >
-            Overview &amp; Explainer
-          </button>
-          <button
-            id="nav-query"
-            className={`nav-tab-btn ${activeTab === "query" ? "active" : ""}`}
-            onClick={() => setActiveTab("query")}
-          >
-            Ask &amp; Search
-          </button>
-          <button
-            id="nav-duel"
-            className={`nav-tab-btn ${activeTab === "duel" ? "active" : ""}`}
-            onClick={() => setActiveTab("duel")}
-          >
-            Engine Comparison
-          </button>
-          <button
-            id="nav-data"
-            className={`nav-tab-btn ${activeTab === "data" ? "active" : ""}`}
-            onClick={() => setActiveTab("data")}
-          >
-            Knowledge ({docsList.length})
-          </button>
-        </nav>
 
         <div className="header-controls">
           <button className="btn btn-sm" onClick={startTour}>
@@ -210,7 +207,68 @@ export default function App() {
         </div>
       </header>
 
-      <main className="app-container">
+      {/* App Shell with Sidebar */}
+      <div className="app-shell">
+        <aside className="app-sidebar">
+          <div>
+            <div className="sidebar-section-title">Navigation</div>
+            <nav className="sidebar-nav-list">
+              <button
+                className={`sidebar-nav-btn ${activeTab === "explainer" ? "active" : ""}`}
+                onClick={() => setActiveTab("explainer")}
+              >
+                <span>Overview &amp; Explainer</span>
+              </button>
+              <button
+                id="nav-query"
+                className={`sidebar-nav-btn ${activeTab === "query" ? "active" : ""}`}
+                onClick={() => setActiveTab("query")}
+              >
+                <span>Ask &amp; Search</span>
+              </button>
+              <button
+                id="nav-duel"
+                className={`sidebar-nav-btn ${activeTab === "duel" ? "active" : ""}`}
+                onClick={() => setActiveTab("duel")}
+              >
+                <span>Engine Comparison</span>
+              </button>
+              <button
+                id="nav-data"
+                className={`sidebar-nav-btn ${activeTab === "data" ? "active" : ""}`}
+                onClick={() => setActiveTab("data")}
+              >
+                <span>Knowledge Base</span>
+                <span className="badge badge-subtle mono">{docsList.length}</span>
+              </button>
+            </nav>
+          </div>
+
+          <div>
+            <div className="sidebar-section-title">Engine Health</div>
+            <div style={{ padding: "0 10px", fontSize: 12, color: "var(--ink-secondary)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span>Status</span>
+                <span className="badge badge-success">{health?.status || "Ready"}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span>Tables (DuckDB)</span>
+                <span className="mono">{tablesList.length}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>RAM Footprint</span>
+                <span className="mono">&lt; 500 MB</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="sidebar-footer">
+            <div>Zero-Sprawl Omni-RAG</div>
+            <div style={{ marginTop: 2, fontSize: 11 }}>In-Memory AST + JEV + DuckDB</div>
+          </div>
+        </aside>
+
+        <main className="app-main-content">
         {/* TAB 1: Single Explainer Landing */}
         {activeTab === "explainer" && (
           <div>
@@ -416,7 +474,7 @@ export default function App() {
                       <tr>
                         <th>Architectural Dimension</th>
                         <th>Multi-Container Baseline (RAGFlow Reference)</th>
-                        <th>Botmartz VORTEX v0.3</th>
+                        <th>Botmartz VORTEX v1.0</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -438,41 +496,120 @@ export default function App() {
         {/* TAB 4: Knowledge Bases & Ingest */}
         {activeTab === "data" && (
           <div className="layout-grid">
-            <div className="card">
-              <div className="card-title">Add Markdown / Text Document</div>
-              <div className="field-group">
-                <label className="field-label" htmlFor="ingest-doc-id">Document ID</label>
-                <input
-                  id="ingest-doc-id"
-                  type="text"
-                  placeholder="e.g. employee_handbook_2026"
-                  value={docId}
-                  onChange={(e) => setDocId(e.target.value)}
-                />
+            <div>
+              {/* Local File / CSV / PDF Upload Card */}
+              <div className="card">
+                <div className="card-title">
+                  <span>Import Local File (CSV, PDF, MD, Text)</span>
+                  <span className="badge badge-subtle">Local Multi-Format</span>
+                </div>
+                <p style={{ color: "var(--ink-secondary)", fontSize: 13, marginBottom: 14 }}>
+                  Upload full CSV datasets, PDF documents, or Markdown files directly from your computer. Tabular data will be compiled into DuckDB 2.0 tables for SQL queries.
+                </p>
+
+                <div className="field-group">
+                  <label className="field-label" htmlFor="upload-doc-id">Custom Document / Table ID (Optional)</label>
+                  <input
+                    id="upload-doc-id"
+                    type="text"
+                    placeholder="Auto-generated from filename if empty"
+                    value={uploadDocId}
+                    onChange={(e) => setUploadDocId(e.target.value)}
+                  />
+                </div>
+
+                <div
+                  className="upload-dropzone"
+                  onClick={() => document.getElementById("file-upload-input")?.click()}
+                >
+                  <input
+                    id="file-upload-input"
+                    type="file"
+                    style={{ display: "none" }}
+                    accept=".csv,.pdf,.md,.markdown,.txt,.json"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setUploadFile(e.target.files[0]);
+                      }
+                    }}
+                  />
+                  <div className="upload-dropzone-title">
+                    {uploadFile ? `Selected: ${uploadFile.name} (${Math.round(uploadFile.size / 1024)} KB)` : "Choose or drag CSV / PDF / Markdown file here"}
+                  </div>
+                  <div className="upload-dropzone-sub">
+                    Supported extensions: .csv, .pdf, .md, .txt (up to 50 MB)
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <button
+                    className="btn btn-primary"
+                    disabled={!uploadFile || uploadBusy}
+                    onClick={handleFileUpload}
+                  >
+                    {uploadBusy ? "Parsing & Indexing File..." : "Import File into Knowledge Base"}
+                  </button>
+                  {uploadFile && (
+                    <button
+                      className="btn"
+                      disabled={uploadBusy}
+                      onClick={() => setUploadFile(null)}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                {uploadMsg && (
+                  <p
+                    style={{
+                      color: uploadMsg.includes("failed") ? "var(--status-danger)" : "var(--status-success)",
+                      marginTop: 10,
+                      fontSize: 13
+                    }}
+                  >
+                    {uploadMsg}
+                  </p>
+                )}
               </div>
 
-              <div className="field-group">
-                <label className="field-label" htmlFor="ingest-content">Content (Markdown with Headings &amp; Tables)</label>
-                <textarea
-                  id="ingest-content"
-                  rows={8}
-                  placeholder="# Section 1&#10;Paste text or tables here..."
-                  value={docContent}
-                  onChange={(e) => setDocContent(e.target.value)}
-                />
+              {/* Paste Text / Markdown Document */}
+              <div className="card">
+                <div className="card-title">Add Raw Text / Markdown Document</div>
+                <div className="field-group">
+                  <label className="field-label" htmlFor="ingest-doc-id">Document ID</label>
+                  <input
+                    id="ingest-doc-id"
+                    type="text"
+                    placeholder="e.g. employee_handbook_2026"
+                    value={docId}
+                    onChange={(e) => setDocId(e.target.value)}
+                  />
+                </div>
+
+                <div className="field-group">
+                  <label className="field-label" htmlFor="ingest-content">Content (Markdown with Headings &amp; Tables)</label>
+                  <textarea
+                    id="ingest-content"
+                    rows={6}
+                    placeholder="# Section 1&#10;Paste text or tables here..."
+                    value={docContent}
+                    onChange={(e) => setDocContent(e.target.value)}
+                  />
+                </div>
+
+                <button className="btn btn-primary" disabled={ingestBusy} onClick={handleIngest}>
+                  {ingestBusy ? "Indexing AST..." : "Ingest into VORTEX"}
+                </button>
+
+                {ingestMsg && <p style={{ color: "var(--status-success)", marginTop: 10, fontSize: 13 }}>{ingestMsg}</p>}
               </div>
-
-              <button className="btn btn-primary" disabled={ingestBusy} onClick={handleIngest}>
-                {ingestBusy ? "Indexing AST..." : "Ingest into VORTEX"}
-              </button>
-
-              {ingestMsg && <p style={{ color: "var(--status-success)", marginTop: 10, fontSize: 13 }}>{ingestMsg}</p>}
             </div>
 
             <div className="card">
               <div className="card-title">Indexed Documents ({docsList.length})</div>
               {docsList.length === 0 ? (
-                <p style={{ color: "var(--ink-muted)", fontSize: 13 }}>No documents indexed yet. Ingest your first document on the left.</p>
+                <p style={{ color: "var(--ink-muted)", fontSize: 13 }}>No documents indexed yet. Import a file or paste content on the left.</p>
               ) : (
                 <div className="table-wrap">
                   <table className="clean-table">
@@ -508,6 +645,7 @@ export default function App() {
           </div>
         )}
       </main>
+      </div>
     </div>
   );
 }

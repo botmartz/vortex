@@ -496,7 +496,7 @@ async def run_live_benchmark() -> Dict[str, Any]:
         },
         "competitor_baselines": [
             {
-                "framework": "Botmartz VORTEX v0.3",
+                "framework": "Botmartz VORTEX v1.0",
                 "containers": "1 Embedded Process (Scale to PG/Redis)",
                 "idle_ram": "< 500 MB",
                 "chunking": "H-RAG AST + JEV + EAR Adaptive",
