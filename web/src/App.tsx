@@ -115,7 +115,7 @@ export default function App() {
     if (!queryText.trim()) return;
     setQueryBusy(true);
     try {
-      const res = await vortexApi.query({
+      const res = await vortexApi.runQuery({
         query: queryText.trim(),
         provider,
         enable_kag_auto_sql: enableKag
