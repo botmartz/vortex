@@ -390,7 +390,7 @@ export default function App() {
               {queryResult && (
                 <div className="card">
                   <div className="card-title">
-                    <span>Verified Synthesis</span>
+                    <span>Verified Synthesis (VeriFAI™ Grounded)</span>
                     <span className={`badge ${queryResult.abstained ? "badge-warn" : "badge-success"}`}>
                       {queryResult.verdict}
                     </span>
@@ -398,9 +398,27 @@ export default function App() {
                   <div style={{ fontSize: 14, lineHeight: 1.6, whiteSpace: "pre-wrap", marginBottom: 14 }}>
                     {queryResult.result?.answer || "No response generated."}
                   </div>
+
+                  {/* VeriFAI Grounding Badge & Confidence */}
+                  {queryResult.verifai && (
+                    <div style={{ background: "var(--bg-canvas)", border: "1px solid var(--border-hairline)", borderRadius: 6, padding: "10px 12px", marginBottom: 14 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--accent-brand)" }}>
+                          VeriFAI™ Audit Confidence
+                        </span>
+                        <span className="badge badge-success mono">
+                          {Math.round((queryResult.verifai.verifai_confidence || 0) * 100)}% Match
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 12, color: "var(--ink-secondary)" }}>
+                        {queryResult.verifai.claims?.length || 0} atomic claims verified against SHA-256 cryptographic chunk hashes.
+                      </div>
+                    </div>
+                  )}
+
                   {queryResult.result?.kag_sql_executed && (
                     <div>
-                      <div className="field-label">Executed Analytical SQL</div>
+                      <div className="field-label">Executed Analytical SQL (DuckDB 2.0 KAG)</div>
                       <div className="code-box">{queryResult.result.kag_sql_executed}</div>
                     </div>
                   )}
@@ -428,9 +446,9 @@ export default function App() {
                     </div>
 
                     <div>
-                      <span className="field-label">Retrieved Evidence Nodes</span>
+                      <span className="field-label">VeriFAI™ Citations</span>
                       <div className="mono" style={{ fontSize: 12, color: "var(--ink-secondary)" }}>
-                        {(queryResult.merkle_provenance_chain || []).length} AST nodes verified
+                        {(queryResult.verifai?.citations || queryResult.merkle_provenance_chain || []).length} SHA-256 chunk citations verified
                       </div>
                     </div>
                   </div>

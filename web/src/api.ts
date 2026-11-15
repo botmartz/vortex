@@ -52,6 +52,38 @@ export interface QueryResponse {
       claims: Array<{ claim: string; status: string; backing_hash: string }>;
     };
   };
+  verifai_confidence?: number;
+  verifai?: {
+    text: string;
+    verifai_confidence: number;
+    verdict: string;
+    abstained: boolean;
+    claims: Array<{
+      statement: string;
+      verdict: string;
+      confidence_score: number;
+      citations: Array<{
+        source_id: string;
+        structural_path: string[];
+        merkle_hash: string;
+        sha256_hash: string;
+        snippet: string;
+        score: number;
+      }>;
+      sql_expression?: string;
+    }>;
+    citations: Array<{
+      source_id: string;
+      structural_path: string[];
+      merkle_hash: string;
+      sha256_hash: string;
+      snippet: string;
+      score: number;
+    }>;
+    cryptographic_hashes: string[];
+    sql_executed?: string;
+    sql_rows: Array<Record<string, unknown>>;
+  };
   result: {
     answer: string;
     synthesis_backend: string;

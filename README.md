@@ -5,8 +5,8 @@
 <h1 align="center">Botmartz VORTEX</h1>
 
 <p align="center">
-  <b>Frontier Omni-RAG & Deep Agent Harness Engine</b><br>
-  <i>Sub-500MB Zero-Sprawl Runtime · H-RAG AST Trees · JEV Late Chunking · BLAKE3 Merkle Diffing · KAG DuckDB OLAP SQL · SmithDB</i>
+  <b>Frontier Omni-RAG Engine with Native VeriFAI™ Grounding & Verification</b><br>
+  <i>Sub-500MB Zero-Sprawl Runtime · VeriFAI™ Zero-Hallucination Gate · H-RAG AST Trees · JEV Late Chunking · BLAKE3 Merkle Diffing · KAG DuckDB OLAP SQL · SmithDB</i>
 </p>
 
 <p align="center">
@@ -29,24 +29,26 @@
 
 ## What is Botmartz VORTEX?
 
-**Botmartz VORTEX** is an open-source, enterprise-grade Omni-RAG and Deep Agent Harness engine built for developers who need **high retrieval fidelity**, **cryptographic update efficiency**, and **deterministic mathematical precision** without the heavy operational overhead of multi-container microservice stacks.
+**Botmartz VORTEX** is an open-source, enterprise-grade Omni-RAG and Deep Agent Harness engine with **native VeriFAI™ Grounding & Verification**. Built for mission-critical deployments where hallucinations are not an option, VORTEX combines:
 
-Whether you run on a lightweight developer laptop or scale into enterprise Kubernetes clusters, VORTEX runs in a **compact single process (<500 MB idle memory)** that natively embeds Rust tokenization, LanceDB vector storage, DuckDB 2.0 analytical processing, and an SQLite WAL state machine.
+1. **VORTEX Runtime (The Muscle)**: A compact single-process engine running under 500 MB RAM that unifies Rust tokenization, LanceDB vector storage, DuckDB 2.0 analytical processing, and an SQLite WAL state machine.
+2. **VeriFAI™ Ground (The Referee)**: An automated zero-hallucination verification layer that audits synthesized answers into atomic claims, checks SHA-256 chunk cryptographic hashes, matches cross-attention citations, and enforces deterministic evidence-grounded abstention.
 
 <p align="center">
-  <img src="./docs/assets/vortex-ui-preview.png" alt="Botmartz VORTEX Studio UI Preview" width="100%" style="border-radius: 8px; border: 1px solid #E5E2DC;" />
+  <img src="./docs/assets/vortex-ui-preview.png" alt="Botmartz VORTEX Studio UI Preview with VeriFAI Grounding" width="100%" style="border-radius: 8px; border: 1px solid #E5E2DC;" />
 </p>
 
 ---
 
 ## ⚡ Architectural Highlights
 
-1. **Compact Single-Process Runtime**: Designed for zero ops sprawl. Boots in seconds locally without requiring external database containers or distributed orchestrators.
-2. **$O(\Delta)$ BLAKE3 Merkle AST Diffing**: When documents or legal contracts update, VORTEX computes a Merkle diff over the document's Abstract Syntax Tree. Only modified subtrees are re-indexed, saving significant compute and embedding API costs.
-3. **Deterministic Math (DuckDB KAG)**: Questions requiring calculations, aggregations, or spreadsheet data compile directly into in-memory DuckDB OLAP SQL queries for mathematically verified answers.
-4. **Hierarchical Document Trees (H-RAG & JEV)**: Retains parent-child document hierarchy and applies late-chunking embeddings across full-document attention matrices before chunk pooling to eliminate context clipping.
-5. **SmithDB & Pregel BSP Agent Harness**: Features a 4-superstep state machine with immutable checkpointing, waterfall span traces, and time-travel replay.
-6. **Provider Agnostic**: Configurable for **Google Gemini (Primary)**, local **Ollama** (`gpt-oss:120b`, Llama 3), **llama.cpp server**, or **OpenAI/vLLM/SGLang**.
+1. **Native VeriFAI™ Grounding Referee**: Verifies every synthesized sentence against cryptographic chunk hashes and analytical SQL rows, calculating atomic claim verification scores and enforcing strict abstention gates when evidence is missing.
+2. **Compact Single-Process Runtime**: Designed for zero ops sprawl. Boots in seconds locally without requiring external database containers or distributed orchestrators.
+3. **$O(\Delta)$ BLAKE3 Merkle AST Diffing**: When documents or legal contracts update, VORTEX computes a Merkle diff over the document's Abstract Syntax Tree. Only modified subtrees are re-indexed, saving significant compute and embedding API costs.
+4. **Deterministic Math (DuckDB KAG)**: Questions requiring calculations, aggregations, or spreadsheet data compile directly into in-memory DuckDB OLAP SQL queries for mathematically verified answers.
+5. **Hierarchical Document Trees (H-RAG & JEV)**: Retains parent-child document hierarchy and applies late-chunking embeddings across full-document attention matrices before chunk pooling to eliminate context clipping.
+6. **SmithDB & Pregel BSP Agent Harness**: Features a 4-superstep state machine with immutable checkpointing, waterfall span traces, and time-travel replay.
+7. **Provider Agnostic**: Configurable for **Google Gemini (Primary)**, local **Ollama** (`gpt-oss:120b`, Llama 3), **llama.cpp server**, or **OpenAI/vLLM/SGLang**.
 
 ---
 

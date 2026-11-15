@@ -18,6 +18,7 @@ from pydantic import BaseModel
 from ..agents import BotmartzDelegationGraph, DeepAgentHarness, RAGFlowSideBySideDuel, VortexSmithDB
 from ..config import settings
 from ..inference import VortexRuntimeClusterManager
+from ..verifai import VeriFAIEngine
 from .a2a import A2ATaskStore
 from .mcp_server import handle_mcp_jsonrpc
 from .seed import seed_default_corpus
@@ -344,6 +345,16 @@ def hybrid_query(req: QueryRequest) -> Dict[str, Any]:
             }
         ],
     )
+    res_inner = out.get("result", {})
+    verifai_audit = VeriFAIEngine.audit(
+        answer=res_inner.get("answer", ""),
+        evidence_hits=res_inner.get("hrag_jev_hits", []),
+        sql_rows=res_inner.get("kag_sql_rows", []),
+        sql_query=res_inner.get("kag_sql_executed"),
+        abstained=bool(out.get("abstained", False)),
+    )
+    out["verifai"] = verifai_audit.to_dict()
+    out["verifai_confidence"] = verifai_audit.verifai_confidence
     out["trace_id"] = trace.get("trace_id")
     return out
 
