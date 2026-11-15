@@ -98,6 +98,7 @@ class DocumentAST(BaseModel):
     uri: str
     version: int = Field(default=1, ge=1)
     root_id: str
+    kb_id: str = Field(default="kb-enterprise-core", description="Knowledge Base partition ID for multi-tenancy")
     nodes: Dict[str, ASTNode] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -129,31 +130,9 @@ class DocumentAST(BaseModel):
         old_ids = set(self.nodes.keys())
         new_ids = set(newer.nodes.keys())
 
-        for nid in sorted(new_ids - old_ids):
-            n_node = newer.nodes[nid]
-            deltas.append(
-                MerkleNodeDelta(
-                    node_id=nid,
-                    change_type=MerkleChangeType.ADDED,
-                    old_merkle_hash=None,
-                    new_merkle_hash=n_node.merkle_hash,
-                    structural_path=n_node.structural_path,
-                )
-            )
-
-        for nid in sorted(old_ids - new_ids):
-            o_node = self.nodes[nid]
-            deltas.append(
-                MerkleNodeDelta(
-                    node_id=nid,
-                    change_type=MerkleChangeType.DELETED,
-                    old_merkle_hash=o_node.merkle_hash,
-                    new_merkle_hash=None,
-                    structural_path=o_node.structural_path,
-                )
-            )
-
-        for nid in sorted(old_ids & new_ids):
+        # Match exact IDs first
+        common_ids = old_ids & new_ids
+        for nid in sorted(common_ids):
             o_node = self.nodes[nid]
             n_node = newer.nodes[nid]
             if o_node.content_hash != n_node.content_hash:
@@ -166,6 +145,51 @@ class DocumentAST(BaseModel):
                         structural_path=n_node.structural_path,
                     )
                 )
+
+        unmatched_old = {nid: self.nodes[nid] for nid in (old_ids - common_ids)}
+        unmatched_new = {nid: newer.nodes[nid] for nid in (new_ids - common_ids)}
+
+        # Structural path alignment: if old and new share the same structural_path and node_type, pair them as MODIFIED
+        matched_pairs: List[Tuple[str, str]] = []
+        for o_nid, o_node in list(unmatched_old.items()):
+            for n_nid, n_node in list(unmatched_new.items()):
+                if o_node.structural_path == n_node.structural_path and o_node.node_type == n_node.node_type:
+                    matched_pairs.append((o_nid, n_nid))
+                    deltas.append(
+                        MerkleNodeDelta(
+                            node_id=n_nid,
+                            change_type=MerkleChangeType.MODIFIED,
+                            old_merkle_hash=o_node.merkle_hash,
+                            new_merkle_hash=n_node.merkle_hash,
+                            structural_path=n_node.structural_path,
+                        )
+                    )
+                    unmatched_old.pop(o_nid, None)
+                    unmatched_new.pop(n_nid, None)
+                    break
+
+        for nid, n_node in unmatched_new.items():
+            deltas.append(
+                MerkleNodeDelta(
+                    node_id=nid,
+                    change_type=MerkleChangeType.ADDED,
+                    old_merkle_hash=None,
+                    new_merkle_hash=n_node.merkle_hash,
+                    structural_path=n_node.structural_path,
+                )
+            )
+
+        for nid, o_node in unmatched_old.items():
+            deltas.append(
+                MerkleNodeDelta(
+                    node_id=nid,
+                    change_type=MerkleChangeType.DELETED,
+                    old_merkle_hash=o_node.merkle_hash,
+                    new_merkle_hash=None,
+                    structural_path=o_node.structural_path,
+                )
+            )
+
         return deltas
 
 

@@ -227,6 +227,7 @@ class HybridTriadStore:
         query_vec_fn: Any,
         limit: int = 6,
         rrf_k: float = 60.0,
+        ear_weights: Optional[Dict[str, float]] = None,
     ) -> List[Dict[str, Any]]:
         with self._lock:
             bm25_hits = self.bm25_search(query, limit=limit * 3)
@@ -235,11 +236,14 @@ class HybridTriadStore:
             bm25_scores = dict(bm25_hits)
             vec_scores = dict(vec_hits)
 
+            w_bm25 = float((ear_weights or {}).get("alpha_bm25", 1.2))
+            w_vec = float((ear_weights or {}).get("beta_jev", 1.0))
+
             rrf_scores: Dict[str, float] = {}
             for rank, (nid, _) in enumerate(bm25_hits, start=1):
-                rrf_scores[nid] = rrf_scores.get(nid, 0.0) + (1.2 / (rrf_k + rank))
+                rrf_scores[nid] = rrf_scores.get(nid, 0.0) + (w_bm25 / (rrf_k + rank))
             for rank, (nid, _) in enumerate(vec_hits, start=1):
-                rrf_scores[nid] = rrf_scores.get(nid, 0.0) + (1.0 / (rrf_k + rank))
+                rrf_scores[nid] = rrf_scores.get(nid, 0.0) + (w_vec / (rrf_k + rank))
 
             ranked = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)[:limit]
             results: List[Dict[str, Any]] = []

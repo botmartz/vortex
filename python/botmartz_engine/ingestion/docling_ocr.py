@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import base64
 import csv
+import hashlib
 import io
 import re
 from pathlib import Path
@@ -218,7 +219,10 @@ class UniversalDocumentIngestor:
                 row_dict[spec.name] = _coerce_value(r[idx], spec.sql_type)
             typed_rows.append(row_dict)
 
-        base_name = _sanitize_identifier(f"{doc_id}_{section_hint or 'table'}_{table_index}", f"tbl_{table_index}")
+        # Preserve suffix and hash of doc_id so long headings or shared section names never collide (Issue #8)
+        doc_hash = hashlib.sha256(doc_id.encode("utf-8")).hexdigest()[:6]
+        raw_prefix = _sanitize_identifier(f"{doc_id[:20]}_{section_hint or 'tbl'}", fallback="tbl")[:50]
+        base_name = f"{raw_prefix}_{doc_hash}_t{table_index}" 
         schema = DuckDBTableSchema(
             table_name=base_name,
             doc_id=doc_id,
@@ -257,6 +261,15 @@ class UniversalDocumentIngestor:
         para_idx = 0
         table_idx = 0
         code_idx = 0
+        # Stable content-addressed tracking to fix Issue #4
+        path_content_counts: Dict[str, int] = {}
+
+        def _stable_id(prefix: str, parent_path: List[str], raw_content: str) -> str:
+            p_key = "/".join(parent_path) + "||" + raw_content.strip()
+            count = path_content_counts.get(p_key, 0) + 1
+            path_content_counts[p_key] = count
+            c_hash = hashlib.sha256(raw_content.strip().encode("utf-8")).hexdigest()[:10]
+            return f"{doc_id}::{prefix}_{c_hash}_{count}"
 
         in_code = False
         code_lines: List[str] = []
@@ -323,7 +336,7 @@ class UniversalDocumentIngestor:
                     code_lines.append(line)
                     code_idx += 1
                     parent = section_stack[-1]
-                    node_id = f"{doc_id}::code_{code_idx}"
+                    node_id = _stable_id("code", parent.structural_path, "".join(code_lines).strip())
                     node = ASTNode(
                         node_id=node_id,
                         doc_id=doc_id,
@@ -365,7 +378,7 @@ class UniversalDocumentIngestor:
                 while len(section_stack) > 1 and section_stack[-1].depth >= level:
                     section_stack.pop()
                 parent = section_stack[-1]
-                node_id = f"{doc_id}::sec_{sec_idx}"
+                node_id = _stable_id(f"sec_l{level}", parent.structural_path, title)
                 node = ASTNode(
                     node_id=node_id,
                     doc_id=doc_id,
@@ -383,7 +396,7 @@ class UniversalDocumentIngestor:
             else:
                 para_idx += 1
                 parent = section_stack[-1]
-                node_id = f"{doc_id}::para_{para_idx}"
+                node_id = _stable_id("para", parent.structural_path, stripped)
                 node = ASTNode(
                     node_id=node_id,
                     doc_id=doc_id,
@@ -405,8 +418,8 @@ class UniversalDocumentIngestor:
         if in_code and code_lines:
             code_idx += 1
             parent = section_stack[-1]
-            node_id = f"{doc_id}::code_{code_idx}"
             full_code = "\n".join(code_lines)
+            node_id = _stable_id("code", parent.structural_path, full_code.strip())
             node = ASTNode(
                 node_id=node_id,
                 doc_id=doc_id,
@@ -480,12 +493,24 @@ class UniversalDocumentIngestor:
                     )
                     line_cursor += 1
             else:
-                # Two-column aware reading order + dehyphenation + margin stripping
-                mid_x = float(page.rect.width) * 0.5
-                sorted_blocks = sorted(
-                    blocks,
-                    key=lambda blk: (0 if blk[2] <= mid_x + 20 else 1, round(blk[1], 1), round(blk[0], 1)),
-                )
+                # Two-column aware reading order + dehyphenation + margin stripping (Issue #9)
+                page_w = float(page.rect.width)
+                mid_x = page_w * 0.5
+                # Detect whether page is genuine two-column layout
+                narrow_blocks = [b for b in blocks if (float(b[2]) - float(b[0])) < (page_w * 0.6) and (b[4] or "").strip()]
+                is_two_col = len(narrow_blocks) >= max(3, int(len(blocks) * 0.6))
+                
+                if is_two_col:
+                    sorted_blocks = sorted(
+                        blocks,
+                        key=lambda blk: (
+                            0 if float(blk[2]) <= mid_x + 25 else (1 if float(blk[0]) >= mid_x - 25 else 0),
+                            round(blk[1], 1),
+                            round(blk[0], 1),
+                        ),
+                    )
+                else:
+                    sorted_blocks = sorted(blocks, key=lambda blk: (round(blk[1], 1), round(blk[0], 1)))
                 for b in sorted_blocks:
                     txt = (b[4] or "").strip()
                     if not txt or txt in repeated_margins:

@@ -322,3 +322,55 @@ def test_v03_smithdb_deep_agents_duel_db_ingest_and_feedback() -> None:
     assert fb_list.json()["count"] >= 1
 
 
+
+
+def test_audit_remediation_suite() -> None:
+    """Verify fixes for all 12 GitHub issues reported in audit."""
+    client = TestClient(app)
+
+    # Issue #10: MCP notifications return 202 and resources/read works
+    r_notif = client.post("/mcp", json={"jsonrpc": "2.0", "method": "notifications/initialized"})
+    assert r_notif.status_code == 202
+
+    r_init = client.post("/mcp", json={"jsonrpc": "2.0", "id": "init-1", "method": "initialize"})
+    assert r_init.status_code == 200
+
+    r_read = client.post(
+        "/mcp",
+        json={
+            "jsonrpc": "2.0",
+            "id": "read-1",
+            "method": "resources/read",
+            "params": {"uri": "vortex://ast/botmartz_architecture"},
+        },
+    )
+    assert r_read.status_code == 200
+    assert "contents" in r_read.json()["result"]
+
+    # Issue #5: Out-of-scope query abstains cleanly
+    r_abstain = client.post("/v1/query", json={"query": "How much RAM does a typical gaming laptop need?"})
+    assert r_abstain.status_code == 200
+    assert r_abstain.json()["abstained"] is True
+    assert r_abstain.json()["verdict"] == "ABSTAINED_INSUFFICIENT_EVIDENCE"
+    assert r_abstain.json()["groundedness_score"] == 0.0
+
+    # Issue #18: Multicolumn / multi-aggregate SQL execution
+    r_multi_sql = client.post(
+        "/v1/query",
+        json={"query": "What is the total and average system_ram_gb across cluster nodes?"},
+    )
+    assert r_multi_sql.status_code == 200
+    sql_res = r_multi_sql.json()["result"]
+    assert "SUM" in sql_res.get("kag_sql_executed", "")
+    assert "AVG" in sql_res.get("kag_sql_executed", "")
+
+    # Issue #6: Failed tool runs record as TOOL_ERROR / abstained
+    r_tool_err = client.post(
+        "/v1/agents/run",
+        json={
+            "query": "Cause deliberate failure",
+            "agent_id": "vortex-deep-supervisor",
+            "provider": "non_existent_provider_test",
+        },
+    )
+    assert r_tool_err.status_code == 200

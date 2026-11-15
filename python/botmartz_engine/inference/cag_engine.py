@@ -197,22 +197,42 @@ class MultiProviderInferenceEngine:
                 best_score = score
                 best_table = sch
 
-        if best_table is None:
+        # Require minimum confident column or table name match
+        if best_table is None or best_score < 2:
             return None
 
         numeric_cols = [c.name for c in best_table.columns if c.sql_type in {"BIGINT", "DOUBLE"}]
-        if numeric_cols:
-            scored_cols = sorted(
-                numeric_cols,
-                key=lambda col: sum(1 for part in col.lower().split("_") if len(part) >= 3 and part in q_tokens),
-                reverse=True,
-            )
-            target_col = scored_cols[0]
-            if any(w in q_lower for w in {"total", "sum"}):
-                return f'SELECT COUNT(*) AS row_count, SUM("{target_col}") AS total_{target_col} FROM "{best_table.table_name}"'
-            if any(w in q_lower for w in {"average", "avg", "mean"}):
-                return f'SELECT COUNT(*) AS row_count, AVG("{target_col}") AS avg_{target_col} FROM "{best_table.table_name}"'
-        return f'SELECT * FROM "{best_table.table_name}" LIMIT 10'
+        # Check for multiple requested aggregates across columns (Issue #18)
+        select_parts = ["COUNT(*) AS row_count"]
+        wants_sum = any(w in q_lower for w in {"total", "sum"})
+        wants_avg = any(w in q_lower for w in {"average", "avg", "mean"})
+        wants_max = any(w in q_lower for w in {"maximum", "max", "highest"})
+        wants_min = any(w in q_lower for w in {"minimum", "min", "lowest"})
+
+        matched_num_cols = [
+            c for c in numeric_cols
+            if any(part in q_tokens for part in c.lower().split("_") if len(part) >= 3)
+        ]
+        target_cols = matched_num_cols if matched_num_cols else numeric_cols[:2]
+
+        if target_cols and (wants_sum or wants_avg or wants_max or wants_min):
+            for tc in target_cols:
+                if wants_sum:
+                    select_parts.append(f'SUM("{tc}") AS total_{tc}')
+                if wants_avg:
+                    select_parts.append(f'AVG("{tc}") AS avg_{tc}')
+                if wants_max:
+                    select_parts.append(f'MAX("{tc}") AS max_{tc}')
+                if wants_min:
+                    select_parts.append(f'MIN("{tc}") AS min_{tc}')
+            return f'SELECT {", ".join(select_parts)} FROM "{best_table.table_name}"'
+
+        # If question specifically mentions columns in this table, select them instead of blind SELECT *
+        if matched_num_cols:
+            col_list = ", ".join(f'"{c}"' for c in matched_num_cols)
+            return f'SELECT {col_list} FROM "{best_table.table_name}" LIMIT 10'
+
+        return None
 
     def synthesize_answer(
         self,
@@ -298,8 +318,8 @@ class MultiProviderInferenceEngine:
             except Exception:
                 pass
 
-        # 3. Local Ollama (gpt-oss:120b-cloud or local quantized)
-        if provider in {"ollama", "openai", "gemini", "default"}:
+        # 3. Local Ollama (explicitly requested only - no silent fallback from openai, Issue #13)
+        if provider in {"ollama", "local"}:
             try:
                 ollama_url = (custom_base_url or settings.ollama_base_url).rstrip("/")
                 ollama_model = custom_model or settings.ollama_model

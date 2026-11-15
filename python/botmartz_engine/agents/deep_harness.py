@@ -215,7 +215,7 @@ class SelfCorrectingClaimJudge:
             if sql_match:
                 status = "NUMERIC_SQL_VERIFIED"
                 supported_cnt += 1
-            elif best_overlap >= 2 or (hits and best_overlap >= 1):
+            elif best_overlap >= 3:
                 status = "SUPPORTED"
                 supported_cnt += 1
             else:
@@ -298,7 +298,7 @@ class DeepAgentHarness:
         query: str,
         agent_id: str = "vortex-deep-supervisor",
         thread_id: Optional[str] = None,
-        provider: str = "openai",
+        provider: Optional[str] = None,
         enable_speculative: bool = True,
         kb_id: Optional[str] = None,
     ) -> Dict[str, Any]:
@@ -309,11 +309,14 @@ class DeepAgentHarness:
             "agent_id": agent_id,
             "name": agent_id,
             "topology": "pregel_supervisor",
-            "provider": provider,
+            "provider": provider or "openai",
+            "model": "gpt-4o-mini",
+            "system_prompt": "",
             "tools": ["tool_hybrid_ear_search", "tool_navigate_ast_tree", "tool_duckdb_kag_sql"],
             "kb_ids": [kb_id] if kb_id else ["kb-enterprise-core"],
         }
         chosen_provider = provider or agent_cfg.get("provider", "openai")
+        chosen_model = agent_cfg.get("model")
         enabled_tools = set(agent_cfg.get("tools", []))
         spans: List[Dict[str, Any]] = []
         checkpoints: List[Dict[str, Any]] = []
@@ -350,6 +353,7 @@ class DeepAgentHarness:
                 query=query,
                 provider=chosen_provider,
                 enable_kag_auto_sql=("tool_duckdb_kag_sql" in enabled_tools or not enabled_tools),
+                custom_model=chosen_model,
             ),
             spans=spans,
             superstep=2,
@@ -424,9 +428,13 @@ class DeepAgentHarness:
 
         # --- SUPERSTEP 4: SCG Atomic Claim Judge & Final Gate ---
         s4_t0 = time.perf_counter()
-        abstained = bool(query_res.get("abstained", False))
+        # Fix Issue #6: If tool execution failed, ensure verdict is TOOL_ERROR and abstained is True
+        is_tool_error = "error" in query_res or query_res.get("verdict") == "TOOL_ERROR"
+        abstained = bool(query_res.get("abstained", False)) or is_tool_error
+        raw_verdict = "TOOL_ERROR" if is_tool_error else query_res.get("verdict", "ABSTAINED_INSUFFICIENT_EVIDENCE" if abstained else "VERIFIED_GROUNDED")
+        
         scg_metrics = SelfCorrectingClaimJudge.verify_atomic_claims(
-            answer=res_inner.get("answer", ""),
+            answer=res_inner.get("answer", query_res.get("error", "Error executing tool")),
             hits=hits,
             sql_rows=sql_rows,
             abstained=abstained,
@@ -437,7 +445,7 @@ class DeepAgentHarness:
                 "superstep": 4,
                 "layer": "Layer3:SCGDecisionJudge",
                 "name": "SCG Claim & Sentinel Auditor",
-                "status": query_res.get("verdict", "VERIFIED"),
+                "status": raw_verdict,
                 "latency_ms": round((time.perf_counter() - s4_t0) * 1000.0, 2),
                 "meta": {"claims": scg_metrics["claim_count"], "verified": scg_metrics["verified_count"]},
             }
@@ -448,7 +456,7 @@ class DeepAgentHarness:
                 agent_id=agent_cfg["agent_id"],
                 superstep=4,
                 node_name="pregel_scg_sentinel",
-                state={"verdict": query_res.get("verdict"), "scg_verified": scg_metrics["verified_count"]},
+                state={"verdict": raw_verdict, "scg_verified": scg_metrics["verified_count"]},
             )
         )
 
@@ -461,7 +469,7 @@ class DeepAgentHarness:
             thread_id=tid,
             agent_id=agent_cfg["agent_id"],
             query=query,
-            verdict=query_res.get("verdict", "VERIFIED"),
+            verdict=raw_verdict,
             total_latency_ms=total_ms,
             total_tokens=total_tokens,
             mcsd_speedup_x=float(mcsd_metrics.get("estimated_speedup_x", 1.0)),
@@ -474,10 +482,10 @@ class DeepAgentHarness:
             "thread_id": tid,
             "agent": agent_cfg,
             "total_latency_ms": total_ms,
-            "verdict": query_res.get("verdict"),
+            "verdict": raw_verdict,
             "abstained": abstained,
-            "groundedness_score": query_res.get("groundedness_score", 0.0),
-            "answer": res_inner.get("answer", ""),
+            "groundedness_score": 0.0 if abstained else query_res.get("groundedness_score", 0.0),
+            "answer": res_inner.get("answer", query_res.get("error", "")),
             "synthesis_backend": res_inner.get("synthesis_backend", chosen_provider),
             "ear_routing": ear_profile,
             "mcsd_speculative": mcsd_metrics,

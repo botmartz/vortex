@@ -109,7 +109,8 @@ def handle_mcp_jsonrpc(
         }
 
     if method == "notifications/initialized":
-        return {"jsonrpc": "2.0", "id": req_id, "result": {}}
+        # Streamable HTTP / standard JSON-RPC: notifications without id return empty dict or no response
+        return {}
 
     if method == "tools/list":
         return {"jsonrpc": "2.0", "id": req_id, "result": {"tools": MCP_TOOLS}}
@@ -125,6 +126,37 @@ def handle_mcp_jsonrpc(
         ]
         return {"jsonrpc": "2.0", "id": req_id, "result": {"resources": resources}}
 
+    if method == "resources/read":
+        uri = (params or {}).get("uri", "")
+        prefix = "vortex://ast/"
+        if uri.startswith(prefix):
+            doc_id = uri[len(prefix):]
+            doc = engine_graph.state.documents.get(doc_id)
+            if doc:
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "contents": [
+                            {
+                                "uri": uri,
+                                "mimeType": "application/json",
+                                "text": json.dumps(doc.model_dump(mode="json")),
+                            }
+                        ]
+                    },
+                }
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "error": {"code": -32002, "message": f"Resource '{uri}' not found"},
+            }
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "error": {"code": -32602, "message": f"Invalid resource URI: {uri}"},
+        }
+
     if method == "tools/call":
         name = params.get("name")
         args = params.get("arguments") or {}
@@ -136,6 +168,8 @@ def handle_mcp_jsonrpc(
                     markdown_text=args["markdown_text"],
                     version=int(args.get("version", 1)),
                 )
+                from .server import _persist_ingested_doc
+                _persist_ingested_doc(args["doc_id"], args.get("uri", f"mcp://{args['doc_id']}.md"), args["markdown_text"], int(args.get("version", 1)))
             elif name == "vortex_hybrid_query":
                 res = engine_graph.query(
                     query=args["query"],

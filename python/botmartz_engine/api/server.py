@@ -128,7 +128,7 @@ class AgentRunRequest(BaseModel):
     query: str
     agent_id: str = "vortex-deep-supervisor"
     thread_id: Optional[str] = None
-    provider: str = "openai"
+    provider: Optional[str] = None
     enable_speculative: bool = True
     kb_id: Optional[str] = None
 
@@ -210,7 +210,7 @@ async def health() -> Dict[str, Any]:
 
 
 @app.post("/v1/ingest")
-async def ingest_document(req: IngestRequest) -> Dict[str, Any]:
+def ingest_document(req: IngestRequest) -> Dict[str, Any]:
     res = engine_graph.ingest_markdown(
         doc_id=req.doc_id,
         uri=req.uri,
@@ -229,16 +229,24 @@ async def ingest_uploaded_file(
     file: UploadFile = File(...),
 ) -> Dict[str, Any]:
     raw = await file.read()
-    return engine_graph.ingest_file(
+    from starlette.concurrency import run_in_threadpool
+    res = await run_in_threadpool(
+        engine_graph.ingest_file,
         doc_id=doc_id,
         filename=file.filename or f"{doc_id}.txt",
         raw_bytes=raw,
         version=version,
     )
+    # Issue #12: Persist ingested file AST payload so it survives server restart
+    ast = engine_graph.state.documents.get(doc_id)
+    if ast:
+        md_text = "\n\n".join(n.content for n in ast.nodes.values() if n.content)
+        _persist_ingested_doc(doc_id, f"upload://{file.filename or doc_id}", md_text, version)
+    return res
 
 
 @app.post("/v1/ingest/db")
-async def ingest_database_source(req: DBIngestRequest) -> JSONResponse:
+def ingest_database_source(req: DBIngestRequest) -> JSONResponse:
     rows: List[Dict[str, Any]] = []
     safe_table = "".join(c if c.isalnum() or c == "_" else "_" for c in req.table_name) or "db_table"
 
@@ -303,7 +311,7 @@ async def ingest_database_source(req: DBIngestRequest) -> JSONResponse:
 
 
 @app.post("/v1/query")
-async def hybrid_query(req: QueryRequest) -> Dict[str, Any]:
+def hybrid_query(req: QueryRequest) -> Dict[str, Any]:
     t0 = time.perf_counter()
     custom_url, custom_model = _resolve_connector_override(req.provider)
     out = engine_graph.query(
@@ -381,7 +389,7 @@ async def list_kag_tables() -> Dict[str, Any]:
 
 
 @app.post("/v1/kag/sql")
-async def execute_kag_sql(req: SQLQueryRequest) -> JSONResponse:
+def execute_kag_sql(req: SQLQueryRequest) -> JSONResponse:
     try:
         rows = engine_graph.state.table_mapper.execute_readonly_sql(req.sql)
         return JSONResponse(content={"sql": req.sql, "row_count": len(rows), "rows": rows})
@@ -416,7 +424,7 @@ async def get_runtime_cluster() -> Dict[str, Any]:
 
 
 @app.post("/v1/benchmark/run")
-async def run_live_benchmark() -> Dict[str, Any]:
+def run_live_benchmark() -> Dict[str, Any]:
     """Run deterministic 4-stage live latency & mutation benchmark against the active VORTEX engine."""
     sections = ["# Botmartz VORTEX Stress Benchmark Dossier\n"]
     for i in range(1, 16):
@@ -556,7 +564,7 @@ async def upsert_managed_agent(req: AgentUpsertRequest) -> Dict[str, Any]:
 
 
 @app.post("/v1/agents/run")
-async def run_managed_agent(req: AgentRunRequest) -> Dict[str, Any]:
+def run_managed_agent(req: AgentRunRequest) -> Dict[str, Any]:
     return deep_harness.run(
         query=req.query,
         agent_id=req.agent_id,
@@ -596,7 +604,7 @@ async def replay_smithdb_checkpoint(req: ReplayRequest) -> JSONResponse:
 
 
 @app.post("/v1/duel/ragflow")
-async def run_ragflow_side_by_side_duel(req: DuelRequest) -> Dict[str, Any]:
+def run_ragflow_side_by_side_duel(req: DuelRequest) -> Dict[str, Any]:
     return RAGFlowSideBySideDuel.run_duel(
         engine_graph=engine_graph,
         deep_harness=deep_harness,
@@ -642,7 +650,7 @@ async def upsert_model_connector(req: ConnectorUpsertRequest) -> Dict[str, Any]:
 
 
 @app.get("/v1/connectors/ollama/models")
-async def discover_ollama_models(base_url: Optional[str] = None) -> Dict[str, Any]:
+def discover_ollama_models(base_url: Optional[str] = None) -> Dict[str, Any]:
     target = (base_url or _resolve_connector_override("ollama")[0] or settings.ollama_base_url).rstrip("/")
     models: List[Dict[str, Any]] = []
     online = False
@@ -702,6 +710,11 @@ async def a2a_rpc_endpoint(request: Request) -> Dict[str, Any]:
 
 
 @app.post("/mcp")
-async def mcp_http_endpoint(request: Request) -> Dict[str, Any]:
+async def mcp_http_endpoint(request: Request) -> Any:
     payload = await request.json()
+    # Issue #10: JSON-RPC notifications (requests without 'id') must return HTTP 202 Accepted with no body
+    if isinstance(payload, dict) and "id" not in payload:
+        handle_mcp_jsonrpc(payload, engine_graph=engine_graph, a2a_store=a2a_store)
+        from fastapi import Response
+        return Response(status_code=202)
     return handle_mcp_jsonrpc(payload, engine_graph=engine_graph, a2a_store=a2a_store)

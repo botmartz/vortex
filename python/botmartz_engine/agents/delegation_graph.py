@@ -105,18 +105,12 @@ class InferenceRouter:
         "avg",
         "count",
         "total",
-        "table",
-        "tables",
-        "sql",
         "select",
         "maximum",
         "max",
         "minimum",
         "min",
-        "compare",
-        "how",
-        "many",
-        "rows",
+        "aggregate",
     }
 
     def __init__(self, jev_chunker: JEVLateChunker) -> None:
@@ -148,6 +142,7 @@ class InferenceRouter:
             query=query,
             query_vec_fn=self.jev_chunker.embed_query,
             limit=limit,
+            ear_weights=ear_routing,
         )
 
         # Require meaningful lexical or semantic overlap so out-of-scope queries abstain cleanly
@@ -253,8 +248,9 @@ class EvaluationSentinel:
             groundedness_score = 0.0
             verdict = "ABSTAINED_INSUFFICIENT_EVIDENCE"
         else:
-            top_rrf = hits[0]["rrf_score"] if hits else 0.02
-            groundedness_score = round(min(0.99, 0.78 + min(0.21, top_rrf * 4.5 + (0.08 if sql_rows else 0.0))), 3)
+            top_rrf = hits[0]["rrf_score"] if hits else 0.0
+            # Continuous groundedness calculation from RRF score and SQL evidence without artificial floor
+            groundedness_score = round(min(0.99, max(0.1, top_rrf * 15.0 + (0.25 if sql_rows else 0.0))), 3)
             verdict = "VERIFIED_GROUNDED"
 
         scg_claims = SelfCorrectingClaimJudge.verify_atomic_claims(
