@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Botmartz VORTEX — Frontier Omni-RAG Engine with VeriFAI™ Grounding</title>
+  <meta name="description" content="Sub-500MB Omni-RAG engine with native VeriFAI™ Grounding, DuckDB 2.0 OLAP SQL, and zero-hallucination cryptographic citations.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-page: #FBFBFA;
+      --bg-surface: #FFFFFF;
+      --border-hairline: #EAEAE8;
+      --border-medium: #D8D8D4;
+      --ink-primary: #141413;
+      --ink-secondary: #63635E;
+      --ink-muted: #8F8F8A;
+      --accent-brand: #B85D3B;
+      --accent-brand-hover: #9E4D2E;
+      --accent-forest: #2A6F4E;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-serif: 'Newsreader', Georgia, serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-page);
+      color: var(--ink-primary);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Navigation */
+    header {
+      border-bottom: 1px solid var(--border-hairline);
+      background: rgba(251, 251, 250, 0.85);
+      backdrop-filter: blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-inner {
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--ink-primary);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      font-size: 18px;
+    }
+    .brand-badge {
+      background: var(--ink-primary);
+      color: #fff;
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+    }
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .nav-links a {
+      color: var(--ink-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.15s ease;
+    }
+    .nav-links a:hover { color: var(--ink-primary); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 9px 18px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--ink-primary);
+      color: #fff;
+      border: 1px solid var(--ink-primary);
+    }
+    .btn-primary:hover {
+      background: var(--accent-brand);
+      border-color: var(--accent-brand);
+      color: #FFFFFF;
+    }
+    .btn-secondary {
+      background: var(--bg-surface);
+      color: var(--ink-primary);
+      border: 1px solid var(--border-medium);
+    }
+    .btn-secondary:hover {
+      border-color: var(--ink-primary);
+    }
+
+    /* Hero */
+    .hero {
+      padding: 80px 0 60px 0;
+      text-align: center;
+    }
+    .tagline-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--accent-brand);
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: 54px;
+      line-height: 1.15;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--ink-primary);
+      margin-bottom: 20px;
+    }
+    .subtitle {
+      font-size: 18px;
+      color: var(--ink-secondary);
+      max-width: 740px;
+      margin: 0 auto 36px auto;
+      line-height: 1.55;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      margin-bottom: 48px;
+    }
+
+    /* Code Terminal */
+    .terminal {
+      background: #141413;
+      border-radius: 8px;
+      padding: 20px 24px;
+      text-align: left;
+      max-width: 760px;
+      margin: 0 auto 70px auto;
+      border: 1px solid #2B2B28;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+      font-family: var(--font-mono);
+      font-size: 13.5px;
+      color: #E2E2DF;
+      overflow-x: auto;
+    }
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #2A2A26;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: #8C8C85;
+    }
+    .terminal-dots { display: flex; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #383834; }
+    .kw { color: #D4A373; font-weight: 600; }
+    .str { color: #A3C9A8; }
+    .fn { color: #E0A96D; }
+    .com { color: #72726C; }
+
+    /* Features Grid */
+    .features-section {
+      padding: 60px 0;
+      border-top: 1px solid var(--border-hairline);
+    }
+    .section-head {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .section-head h2 {
+      font-family: var(--font-serif);
+      font-size: 34px;
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+    .section-head p {
+      color: var(--ink-secondary);
+      font-size: 16px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: 8px;
+      padding: 28px 24px;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    .card:hover {
+      border-color: var(--border-medium);
+      transform: translateY(-2px);
+    }
+    .card-icon {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent-brand);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+    .card h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+    .card p {
+      font-size: 14px;
+      color: var(--ink-secondary);
+      line-height: 1.55;
+    }
+
+    /* Comparison Table */
+    .comparison-section {
+      padding: 60px 0;
+      border-top: 1px solid var(--border-hairline);
+    }
+    .table-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: 8px;
+      overflow-x: auto;
+      margin-top: 32px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13.5px;
+    }
+    th, td {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-hairline);
+    }
+    th {
+      background: #FAFAFA;
+      font-weight: 600;
+      color: var(--ink-secondary);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    td.bold { font-weight: 600; color: var(--ink-primary); }
+    td.highlight {
+      color: var(--accent-forest);
+      font-weight: 600;
+    }
+
+    /* CTA Footer */
+    footer {
+      border-top: 1px solid var(--border-hairline);
+      padding: 60px 0 40px 0;
+      text-align: center;
+      background: #FAFAFA;
+    }
+    .footer-content h2 {
+      font-family: var(--font-serif);
+      font-size: 32px;
+      margin-bottom: 14px;
+    }
+    .footer-content p {
+      color: var(--ink-secondary);
+      font-size: 16px;
+      margin-bottom: 28px;
+    }
+    .footer-copy {
+      font-size: 13px;
+      color: var(--ink-muted);
+      margin-top: 48px;
+    }
+
+    @media (max-width: 768px) {
+      h1 { font-size: 38px; }
+      .grid { grid-template-columns: 1fr; }
+      .hero-actions { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="container nav-inner">
+      <a href="#" class="brand">
+        <span>Botmartz VORTEX</span>
+        <span class="brand-badge">v1.0.0</span>
+      </a>
+      <div class="nav-links">
+        <a href="#architecture">Architecture</a>
+        <a href="#comparison">Benchmark</a>
+        <a href="#quickstart">Quickstart</a>
+        <a href="https://github.com/botmartz/vortex" target="_blank" class="btn btn-secondary">Star on GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <div class="tagline-badge">
+        Native VeriFAI™ Grounding &amp; Zero Hallucination
+      </div>
+      <h1>The High-Performance Omni-RAG Engine with Cryptographic Verification.</h1>
+      <p class="subtitle">
+        Eliminate container sprawl, context blindness, and numerical hallucinations. VORTEX delivers a sub-500MB embedded runtime with native DuckDB 2.0 OLAP SQL and SHA-256 chunk claim verification.
+      </p>
+      <div class="hero-actions">
+        <a href="https://github.com/botmartz/vortex" class="btn btn-primary">Get Started on GitHub</a>
+        <a href="#architecture" class="btn btn-secondary">Explore Architecture</a>
+      </div>
+
+      <!-- Terminal Preview -->
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+          </div>
+          <span>python &mdash; vortex_quickstart.py</span>
+        </div>
+        <div>
+          <span class="kw">import</span> vortex<br><br>
+          <span class="com"># Query technical documentation with VeriFAI™ grounding</span><br>
+          response = vortex.<span class="fn">query</span>(<br>
+          &nbsp;&nbsp;<span class="str">"What are the inspection intervals for CFM56-7B fan blades?"</span>,<br>
+          &nbsp;&nbsp;verify=<span class="kw">True</span>  <span class="com"># Native VeriFAI atomic claim verification</span><br>
+          )<br><br>
+          <span class="fn">print</span>(response.text)<br>
+          <span class="fn">print</span>(f<span class="str">"VeriFAI Confidence: {response.verifai_confidence:.1%}"</span>) &nbsp;<span class="com"># 98.4%</span><br>
+          <span class="fn">print</span>(response.citations) &nbsp;<span class="com"># [AMM-72-21, Chunk-SHA256: 3a7f8b...]</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architectural Features -->
+  <section class="features-section" id="architecture">
+    <div class="container">
+      <div class="section-head">
+        <h2>Engineered for Mission-Critical Accuracy</h2>
+        <p>Combining the fastest retrieval muscle with an impartial, deterministic grounding referee.</p>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="card-icon">The Referee</div>
+          <h3>VeriFAI™ Grounding</h3>
+          <p>Extracts atomic claims from the model synthesis and verifies each claim against immutable SHA-256 chunk hashes before the user sees the answer.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon">Exact Math</div>
+          <h3>DuckDB 2.0 OLAP KAG</h3>
+          <p>Compiles CSVs, financial sheets, and technical tables directly into DuckDB tables, running native SQL for exact calculations instead of relying on fuzzy LLM arithmetic.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon">Anaphora-Aware</div>
+          <h3>JEV Late Chunking</h3>
+          <p>Computes embeddings over the complete continuous document attention matrix before chunk pooling, ensuring individual chunks preserve global document context.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon">Sub-500MB</div>
+          <h3>Zero-Sprawl Runtime</h3>
+          <p>Replaces heavy 12-container architectures with a single embedded daemon utilizing LanceDB, DuckDB, and SQLite3 WAL for instant local deployment.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon">Instant Delta</div>
+          <h3>BLAKE3 Merkle Diffing</h3>
+          <p>Only re-embeds document sections that actually changed via O(&Delta;) AST Merkle diffing, skipping up to 96% of redundant token embedding compute.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon">Zero Hallucination</div>
+          <h3>Deterministic Abstention</h3>
+          <p>Enforces a hard <code>ABSTAINED_INSUFFICIENT_EVIDENCE</code> gate whenever evidence lacks verified entailment confidence, preventing dangerous fabrication.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Benchmark Comparison -->
+  <section class="comparison-section" id="comparison">
+    <div class="container">
+      <div class="section-head">
+        <h2>Architectural Benchmark</h2>
+        <p>Measured against traditional multi-container enterprise RAG pipelines on identical hardware.</p>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Architectural Dimension</th>
+              <th>Traditional Multi-Container RAG</th>
+              <th>Botmartz VORTEX</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="bold">DevOps &amp; Infrastructure</td>
+              <td>7–14 Docker containers (ES, MySQL, Redis, MinIO)</td>
+              <td class="highlight">1 Single Daemon / Docker Container</td>
+            </tr>
+            <tr>
+              <td class="bold">Idle Memory Footprint</td>
+              <td>8 GB to 16 GB RAM</td>
+              <td class="highlight">Under 500 MB RAM</td>
+            </tr>
+            <tr>
+              <td class="bold">Document Chunking</td>
+              <td>Flat token windows (destroys context)</td>
+              <td class="highlight">H-RAG AST + JEV Late Chunking</td>
+            </tr>
+            <tr>
+              <td class="bold">Document Mutation / Update</td>
+              <td>O(N) Full re-index on every edit</td>
+              <td class="highlight">O(&Delta;) BLAKE3 Merkle Diff (~96% skipped)</td>
+            </tr>
+            <tr>
+              <td class="bold">Numerical / Tabular Math</td>
+              <td>LLM text approximation (frequent drift)</td>
+              <td class="highlight">Native DuckDB 2.0 OLAP SQL (Exact rows)</td>
+            </tr>
+            <tr>
+              <td class="bold">Verification &amp; Grounding</td>
+              <td>Unverified token stream / heuristic citations</td>
+              <td class="highlight">VeriFAI™ SHA-256 Claim Matching + Abstention</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer & CTA -->
+  <footer>
+    <div class="container footer-content">
+      <h2>Deploy Verifiable AI Infrastructure Today</h2>
+      <p>Apache 2.0 Open Source. Ready for self-hosted sovereign clouds and enterprise clusters.</p>
+      <div class="hero-actions" id="quickstart">
+        <a href="https://github.com/botmartz/vortex" class="btn btn-primary">View GitHub Repository</a>
+      </div>
+      <div class="footer-copy">
+        &copy; 2026 Botmartz Inc. Released under the Apache 2.0 License.
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
