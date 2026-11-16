@@ -1,0 +1,12 @@
+# CODEOWNERS for botmartz/vortex
+# Only @soham2710 can approve and merge changes affecting the core engine and GitHub Pages docs.
+
+# All files by default owned by @soham2710
+* @soham2710
+
+# GitHub Pages static site freeze
+/docs/ @soham2710
+/docs/index.html @soham2710
+
+# Workflows & CI
+/.github/ @soham2710

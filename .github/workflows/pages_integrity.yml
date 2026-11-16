@@ -1,0 +1,34 @@
+name: Pages Integrity and Verification Gate
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+      - '.github/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+
+jobs:
+  verify-pages-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Verify Docs Landing Page Exists
+        run: |
+          if [ ! -f docs/index.html ]; then
+            echo "CRITICAL: docs/index.html is missing!"
+            exit 1
+          fi
+          echo "docs/index.html exists and is verified."
+
+      - name: Check for Unauthorized Modifications
+        run: |
+          echo "Verifying code ownership and frozen asset structure..."
+          grep -q "Botmartz VORTEX" docs/index.html || (echo "Branding integrity check failed" && exit 1)
+          grep -q "VeriFAI" docs/index.html || (echo "VeriFAI claim check failed" && exit 1)
+          echo "Integrity verification passed."
