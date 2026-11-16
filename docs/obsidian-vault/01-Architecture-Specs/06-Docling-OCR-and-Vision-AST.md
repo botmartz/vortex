@@ -80,7 +80,7 @@ The hybrid vision engine encapsulates dual-backend OCR:
 
 ## 3. DeepDoc Lessons & Preprocessing Heuristics
 
-Traditional naive text extractors scramble PDF text, misorder multi-column academic papers, split hyphenated words across chunk boundaries, and pollute vector indices with repeated running headers and footers. Botmartz VORTEX incorporates lessons from RAGFlow's DeepDoc analysis directly into `ingest_pdf_bytes`:
+Traditional naive text extractors scramble PDF text, misorder multi-column academic papers, split hyphenated words across chunk boundaries, and pollute vector indices with repeated running headers and footers. Botmartz VORTEX incorporates lessons from Traditional Multi-Container RAG's DeepDoc analysis directly into `ingest_pdf_bytes`:
 
 ### 3.1 Running Header & Footer Stripping
 ```python
@@ -151,7 +151,7 @@ dehyphenated = re.sub(r"-\n([a-z])", r"\1", txt)
 
 ## 5. Architectural Advantages Over Legacy Approaches
 
-| Dimension | Legacy Pipelines (LangChain / LlamaIndex) | RAGFlow DeepDoc | Botmartz VORTEX Docling OCR |
+| Dimension | Legacy Pipelines (LangChain / LlamaIndex) | Traditional OCR Chunking | Botmartz VORTEX Docling OCR |
 | :--- | :--- | :--- | :--- |
 | **Document Representation** | Flat string chunks | Visual OCR bounding boxes | **Hierarchical `DocumentAST` with exact BBoxes** |
 | **Multi-Column Order** | Scrambled / broken | Heavy ML layout model (YOLOv8) | **Spatial midpoint sorting ($O(N \log N)$)** |
@@ -168,4 +168,4 @@ dehyphenated = re.sub(r"-\n([a-z])", r"\1", txt)
 - **[[01-Architecture-Specs/02-JEV-Late-Chunking|02 — JEV Late Chunking Full-Context Embeddings]]**
 - **[[01-Architecture-Specs/03-CAG-and-KAG-Hybrid-Engine|03 — CAG Radix KV-Cache & DuckDB KAG Engine]]**
 - **[[01-Architecture-Specs/08-Skills-and-Subagents-Catalog|08 — Skills & Subagents Catalog]]**
-- **[[02-RFCs/RFC-001-Surpassing-RAGFlow-Benchmark|RFC-001 — Surpassing RAGFlow Benchmark]]**
+- **[[02-RFCs/RFC-001-Surpassing-Traditional Multi-Container RAG-Benchmark|RFC-001 — Surpassing Traditional Multi-Container RAG Benchmark]]**

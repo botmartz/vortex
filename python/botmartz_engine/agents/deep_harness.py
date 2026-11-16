@@ -526,15 +526,15 @@ class DeepAgentHarness:
 
 
 # ============================================================================
-# 5. SIDE-BY-SIDE RAGFLOW vs. VORTEX v0.3 LIVE DUEL ENGINE
+# 5. SIDE-BY-SIDE TRADITIONAL RAG vs. VORTEX LIVE DUEL ENGINE
 # ============================================================================
 
 class RAGFlowSideBySideDuel:
-    """Runs the same query & document through both RAGFlow-style flat pipeline & Botmartz VORTEX."""
+    """Runs the same query & document through both traditional flat multi-container pipeline & Botmartz VORTEX."""
 
     @staticmethod
     def _ragflow_simulated_pipeline(engine_graph: Any, query: str) -> Dict[str, Any]:
-        """Faithfully executes RAGFlow's flat DeepDoc/Chunk paradigm (fixed 90-word chunks, 0.3/0.7 score, no DuckDB KAG)."""
+        """Faithfully executes traditional flat chunking paradigm (fixed 90-word chunks, 0.3/0.7 score, no DuckDB KAG)."""
         t0 = time.perf_counter()
         flat_chunks: List[Dict[str, Any]] = []
         for doc_id, ast in engine_graph.state.documents.items():
@@ -552,7 +552,7 @@ class RAGFlowSideBySideDuel:
             overlap = len(q_toks & c_toks) / max(1, len(q_toks))
             bm25_est = overlap
             cos_est = min(1.0, overlap * 1.1)
-            # RAGFlow default weighted rank: 0.05..0.3 vector + 0.7 keyword or 0.3 BM25 + 0.7 dense
+            # Default weighted rank: 0.3 BM25 + 0.7 dense
             weighted = 0.3 * bm25_est + 0.7 * cos_est
             if weighted > 0.0:
                 scored.append((weighted, c))
@@ -564,7 +564,7 @@ class RAGFlowSideBySideDuel:
         q_lower = query.lower()
         needs_math = any(k in q_lower for k in {"sum", "total", "average", "avg", "count", "how many", "cost", "vram"})
         return {
-            "engine": "Infiniflow RAGFlow (DeepDoc Flat-Chunk Reference Mode)",
+            "engine": "Traditional Multi-Container RAG (Flat-Chunk Reference Mode)",
             "execution_ms": elapsed_ms,
             "total_flat_chunks": len(flat_chunks),
             "top_score": round(top[0][0], 3) if top else 0.0,
@@ -645,14 +645,14 @@ class RAGFlowSideBySideDuel:
         }
 
         feature_matrix = [
-            {"feature": "Agent Orchestration Core", "ragflow": "internal/harness (Go Pregel + ES/MySQL stack)", "vortex": "Pregel BSP Harness + SmithDB + A2A + MCP"},
-            {"feature": "Agent Tracking & Replay DB", "ragflow": "MySQL + Redis task state", "vortex": "SmithDB (Checkpoints, Waterfall Spans, Time-Travel Replay, Feedback)"},
-            {"feature": "Document Layout & Chunking", "ragflow": "DeepDoc Vision + Fixed Delimiter Slices", "vortex": "Docling/PyMuPDF + RapidOCR + H-RAG AST + JEV Late Chunking"},
+            {"feature": "Agent Orchestration Core", "ragflow": "Multi-container monolithic stack (ES/MySQL/Redis)", "vortex": "Pregel BSP Harness + SmithDB + A2A + MCP"},
+            {"feature": "Agent Tracking & Replay DB", "ragflow": "Standard relational task state", "vortex": "SmithDB (Checkpoints, Waterfall Spans, Time-Travel Replay, Feedback)"},
+            {"feature": "Document Layout & Chunking", "ragflow": "Fixed-window delimiter slices", "vortex": "Docling/PyMuPDF + RapidOCR + H-RAG AST + JEV Late Chunking"},
             {"feature": "Mutation Update Complexity", "ragflow": "O(N) Full File Re-Parse & Re-Embed", "vortex": f"O(Delta) BLAKE3 Merkle Tree Diff (~{skip_pct}% skipped)"},
             {"feature": "Tabular / Numeric Queries", "ragflow": "HTML/Text snippet (LLM text approximation)", "vortex": "Native DuckDB 2.0 OLAP SQL (Exact Deterministic Rows)"},
-            {"feature": "Retrieval Routing", "ragflow": "Fixed weights (0.3 BM25 + 0.7 Vector)", "vortex": "EAR Shannon Entropy-Adaptive Weighting"},
+            {"feature": "Retrieval Routing", "ragflow": "Fixed static weights (BM25 + Vector)", "vortex": "EAR Shannon Entropy-Adaptive Weighting"},
             {"feature": "Speculative Token Acceleration", "ragflow": "None built-in", "vortex": "MCSD (Merkle-Conditioned Speculative Lookup Drafting)"},
-            {"feature": "Hallucination & Claim Gate", "ragflow": "decision_filter / citation score heuristic", "vortex": "SCG Atomic Claim Judge + Hard Abstention Sentinel"},
+            {"feature": "Hallucination & Claim Gate", "ragflow": "Unverified token stream / heuristic scoring", "vortex": "VeriFAI™ Atomic Claim Judge + Hard Abstention Sentinel"},
             {"feature": "Developer & Ops Footprint", "ragflow": "7–14 Containers, 8–16 GB RAM idle", "vortex": "1 Local Process (<500 MB idle) -> Enterprise Postgres/vLLM Scale"},
         ]
 

@@ -157,7 +157,7 @@ class VortexSmithDB:
                     settings.ollama_model,
                     "Verify atomic answer claims against BLAKE3 AST hashes and force abstention if ungrounded.",
                     json.dumps(["tool_merkle_diff_audit", "tool_navigate_ast_tree"]),
-                    json.dumps(["kb-enterprise-core", "kb-ragflow-duel"]),
+                    json.dumps(["kb-enterprise-core", "kb-baseline-duel"]),
                     4,
                     now,
                 ),
@@ -202,10 +202,10 @@ class VortexSmithDB:
                     now,
                 ),
                 (
-                    "kb-ragflow-duel",
+                    "kb-baseline-duel",
                     "Side-by-Side Eval Corpus",
                     "general",
-                    "Reference corpus used to benchmark RAGFlow DeepDoc/AgenticRAG against Botmartz VORTEX.",
+                    "Reference corpus used to benchmark traditional RAG architectures against Botmartz VORTEX.",
                     now,
                 ),
             ]

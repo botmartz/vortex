@@ -59,7 +59,7 @@ Each skill directory contains a specialized `SKILL.md` instruction specification
 | **8** | `mcp-server` | Integration | Implements the Model Context Protocol over Streamable HTTP (`/mcp`) and stdio transport for IDEs and autonomous agent integration. |
 | **9** | `obsidian` | Knowledge | Manages the Obsidian Knowledge Vault under `docs/obsidian-vault/`, enforcing YAML frontmatter, wikilinks, callouts, and Mermaid diagrams. |
 | **10** | `python-fastapi` | Control Plane | High-throughput async control plane serving VORTEX Studio UI, REST API (`/v1/*`), A2A JSON-RPC, and MCP HTTP endpoints. |
-| **11** | `ragflow-benchmark` | Evaluation | Benchmarks Botmartz VORTEX against `infiniflow/ragflow` across resource footprint, container count, chunking quality, and KAG/CAG latency. |
+| **11** | `Traditional Multi-Container RAG-benchmark` | Evaluation | Benchmarks Botmartz VORTEX against `legacy multi-container RAG stacks` across resource footprint, container count, chunking quality, and KAG/CAG latency. |
 | **12** | `rust` | Core Systems | High-performance Rust workspace (`crates/`) executing BLAKE3 Merkle hashing, top-down tree diffing, Tantivy BM25 scoring, and RRF fusion. |
 | **13** | `sentinel-abstention`| Evaluation | Evidence-Grounded Abstention Sentinel enforcing zero-hallucination policies and validating BLAKE3 cryptographic provenance. |
 | **14** | `sglang` | Inference | Exploits SGLang RadixAttention prefix tree reuse and xgrammar constrained decoding for deterministic JSON and SQL generation. |
@@ -86,7 +86,7 @@ Each skill directory contains a specialized `SKILL.md` instruction specification
 
 ### 3.4 `botmartz-sentinel` (Evaluation Sentinel)
 - **Primary Domain**: Cryptographic Merkle provenance auditing, claim verification, and evidence-grounded abstention gates.
-- **Key Skills**: `sentinel-abstention`, `ragflow-benchmark`.
+- **Key Skills**: `sentinel-abstention`, `Traditional Multi-Container RAG-benchmark`.
 - **Primary Responsibility**: Validates that all generated answers are strictly grounded in retrieved AST node spans or DuckDB SQL rows. Enforces `ABSTAINED_INSUFFICIENT_EVIDENCE` when confidence falls below threshold.
 
 ### 3.5 `botmartz-obsidian` (Vault & Technical RFCs Specialist)
@@ -127,5 +127,5 @@ class EngineState:
 - **[[01-Architecture-Specs/04-Agent-Delegation-Graph-and-MCP|04 — Agent Delegation Graph & Native MCP Server]]**
 - **[[01-Architecture-Specs/06-Docling-OCR-and-Vision-AST|06 — Docling OCR & Vision AST Layout Parser]]**
 - **[[01-Architecture-Specs/07-A2A-and-MCP-Protocol-Mesh|07 — A2A & MCP Protocol Mesh]]**
-- **[[02-RFCs/RFC-001-Surpassing-RAGFlow-Benchmark|RFC-001 — Surpassing RAGFlow Benchmark]]**
+- **[[02-RFCs/RFC-001-Surpassing-Traditional Multi-Container RAG-Benchmark|RFC-001 — Surpassing Traditional Multi-Container RAG Benchmark]]**
 - **[[04-Daily-Logs/2026-11-14-Full-VORTEX-Engine-Build-and-Test|2026-11-14 — Full VORTEX Engine Build & Test Log]]**

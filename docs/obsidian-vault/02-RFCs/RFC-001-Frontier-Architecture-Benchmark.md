@@ -1,10 +1,10 @@
 ---
-title: RFC-001 — Surpassing RAGFlow Architectural Benchmark
+title: RFC-001 — Surpassing Traditional Multi-Container RAG Architectural Benchmark
 tags:
   - botmartz
   - rfc
   - benchmark
-  - ragflow
+  - Traditional Multi-Container RAG
   - h-rag
   - jev
   - cag
@@ -16,20 +16,20 @@ status: accepted
 target: Botmartz VORTEX v1.0
 ---
 
-# RFC-001 — Surpassing RAGFlow Architectural Benchmark
+# RFC-001 — Surpassing Traditional Multi-Container RAG Architectural Benchmark
 
 > [!IMPORTANT]
-> **Executive Summary**: This RFC benchmarks **Botmartz VORTEX (Verified Omni-RAG Tree & Execution Engine)** against `infiniflow/ragflow` (analyzed from `ragflow-reference`). By replacing RAGFlow's 14-container infrastructure with a **zero-sprawl embedded Rust + Python architecture**, VORTEX cuts idle memory from **8–16 GB to <500 MB**, introduces **JEV Late Chunking** for anaphora-aware retrieval, guarantees **deterministic tabular analytics via DuckDB KAG**, slashes TTFT via **SGLang/vLLM RadixAttention CAG**, and prevents hallucination via an **Evidence-Grounded Abstention Sentinel**.
+> **Executive Summary**: This RFC benchmarks **Botmartz VORTEX (Verified Omni-RAG Tree & Execution Engine)** against `legacy multi-container RAG stacks` (analyzed from `traditional-rag-reference`). By replacing Traditional Multi-Container RAG's 14-container infrastructure with a **zero-sprawl embedded Rust + Python architecture**, VORTEX cuts idle memory from **8–16 GB to <500 MB**, introduces **JEV Late Chunking** for anaphora-aware retrieval, guarantees **deterministic tabular analytics via DuckDB KAG**, slashes TTFT via **SGLang/vLLM RadixAttention CAG**, and prevents hallucination via an **Evidence-Grounded Abstention Sentinel**.
 
 ---
 
 ## 1. Context & Motivation
 
-Enterprise deployments of `infiniflow/ragflow` suffer from severe operational friction:
-1. **Container Sprawl & DevOps Burden**: Running RAGFlow requires orchestrating 14+ separate containerized services (`docker-compose-base.yml`), including Elasticsearch/OpenSearch, Infinity, MySQL, Redis/Kvrocks, MinIO, NATS, Jaeger, TEI (Text Embeddings Inference), Kibana, and ClickHouse.
-2. **Resource Inefficiency**: An idle RAGFlow cluster consumes between 8 GB and 16 GB of host RAM before ingesting a single file, making it unsuitable for edge servers, sovereign workstations, or private enterprise VPCs.
-3. **Lossy Chunking**: RAGFlow's DeepDoc OCR extracts text bounding boxes but slices them into flat, isolated chunks prior to vector embedding. This destroys inter-paragraph anaphora, cross-section references, and document hierarchy.
-4. **Hallucination in Tabular Reasoning**: RAGFlow serializes tables as raw Markdown or HTML text chunks. Quantitative questions ("What is the total expenditure across all Q3 invoices?") rely on LLM mental arithmetic, resulting in hallucinations and arithmetic errors.
+Enterprise deployments of `legacy multi-container RAG stacks` suffer from severe operational friction:
+1. **Container Sprawl & DevOps Burden**: Running Traditional Multi-Container RAG requires orchestrating 14+ separate containerized services (`docker-compose-base.yml`), including Elasticsearch/OpenSearch, Infinity, MySQL, Redis/Kvrocks, MinIO, NATS, Jaeger, TEI (Text Embeddings Inference), Kibana, and ClickHouse.
+2. **Resource Inefficiency**: An idle Traditional Multi-Container RAG cluster consumes between 8 GB and 16 GB of host RAM before ingesting a single file, making it unsuitable for edge servers, sovereign workstations, or private enterprise VPCs.
+3. **Lossy Chunking**: Traditional Multi-Container RAG's DeepDoc OCR extracts text bounding boxes but slices them into flat, isolated chunks prior to vector embedding. This destroys inter-paragraph anaphora, cross-section references, and document hierarchy.
+4. **Hallucination in Tabular Reasoning**: Traditional Multi-Container RAG serializes tables as raw Markdown or HTML text chunks. Quantitative questions ("What is the total expenditure across all Q3 invoices?") rely on LLM mental arithmetic, resulting in hallucinations and arithmetic errors.
 5. **No KV Cache Reuse**: Prompts are assembled without deterministic prefix alignment, forcing inference engines to recompute KV-cache states on every query turn.
 
 **Botmartz VORTEX** was engineered from first principles to resolve these architectural deficiencies.
@@ -38,7 +38,7 @@ Enterprise deployments of `infiniflow/ragflow` suffer from severe operational fr
 
 ## 2. Architectural Comparison Matrix
 
-| Architectural Dimension | `infiniflow/ragflow` (v0.15+) | **Botmartz VORTEX (Flagship Engine)** |
+| Architectural Dimension | `legacy multi-container RAG stacks` (v0.15+) | **Botmartz VORTEX (Flagship Engine)** |
 | :--- | :--- | :--- |
 | **System Footprint** | **14+ Containers** (ES, MySQL, Redis, MinIO, NATS, etc.) | **1 Embedded Process** (Rust Core + Python FastAPI) |
 | **Idle RAM Footprint** | **8.0 GB – 16.0 GB RAM** | **< 500 MB RAM** (<100 MB for Rust Core Daemon) |
@@ -60,9 +60,9 @@ Enterprise deployments of `infiniflow/ragflow` suffer from severe operational fr
 
 ```mermaid
 flowchart TD
-    subgraph RAGFlow_Topology ["RAGFlow Architecture: 14 Containers"]
+    subgraph Traditional Multi-Container RAG_Topology ["Traditional Multi-Container RAG Architecture: 14 Containers"]
         RF_Client["Client"] --> RF_Nginx["Nginx Gateway"]
-        RF_Nginx --> RF_Backend["RAGFlow Core"]
+        RF_Nginx --> RF_Backend["Traditional Multi-Container RAG Core"]
         RF_Backend --> RF_MySQL["MySQL Database"]
         RF_Backend --> RF_Redis["Redis / Kvrocks Cache"]
         RF_Backend --> RF_MinIO["MinIO S3 Object Store"]
@@ -86,15 +86,15 @@ flowchart TD
     end
 ```
 
-- **RAGFlow Sprawl**: Any network partition, volume permission conflict, or memory limit violation across its 14 containers brings down the pipeline. Upgrading requires running multi-stage database migration scripts (`migration.sh`).
+- **Traditional Multi-Container RAG Sprawl**: Any network partition, volume permission conflict, or memory limit violation across its 14 containers brings down the pipeline. Upgrading requires running multi-stage database migration scripts (`migration.sh`).
 - **VORTEX Zero-Sprawl**: LanceDB, Tantivy, and DuckDB run directly inside the application memory space using zero-copy memory mapping (`mmap`). Data files persist in a single `data/` directory. Zero ports to expose, zero container orchestration, zero networking overhead.
 
 ---
 
 ### 3.2 Chunking: Naive Pre-Embedding vs JEV Late Chunking
 
-#### The Legacy Problem in RAGFlow
-In RAGFlow, a document is parsed and immediately chopped into discrete chunks:
+#### The Legacy Problem in Traditional Multi-Container RAG
+In Traditional Multi-Container RAG, a document is parsed and immediately chopped into discrete chunks:
 $$\text{Doc} \longrightarrow [C_1, C_2, C_3, \dots, C_n] \longrightarrow [\mathbf{E}(C_1), \mathbf{E}(C_2), \dots, \mathbf{E}(C_n)]$$
 If $C_2$ begins with *"It achieves 97% efficiency under peak load"*, the embedding model $\mathbf{E}(C_2)$ has no context for what *"It"* refers to, causing critical retrieval failures when queries ask about *"Threadripper thermal performance"*.
 
@@ -109,7 +109,7 @@ $$\mathbf{v}_{\text{chunk}} = \alpha \cdot \text{MeanPool}(\mathbf{H}[\text{span
 
 ### 3.3 Document Mutations: Naive Re-Indexing vs BLAKE3 Merkle Diffing
 
-- **RAGFlow**: Modifying one sentence in a 100-page manual requires deleting all vectors for that document and re-running DeepDoc OCR, re-chunking, and re-embedding every page.
+- **Traditional Multi-Container RAG**: Modifying one sentence in a 100-page manual requires deleting all vectors for that document and re-running DeepDoc OCR, re-chunking, and re-embedding every page.
 - **VORTEX**: Constructs a cryptographic **BLAKE3 Merkle Tree** over the `DocumentAST`:
   - Leaf node: $\text{hash} = \text{BLAKE3}(\text{content} \parallel \text{type} \parallel \text{span})$.
   - Branch node: $\text{hash} = \text{BLAKE3}(\text{child}_1 \parallel \dots \parallel \text{child}_m)$.
@@ -125,13 +125,13 @@ Consider the query: *"What is the total VRAM across all workstation nodes?"*
 sequenceDiagram
     autonumber
     actor User
-    participant RAGFlow as RAGFlow Pipeline
+    participant Traditional Multi-Container RAG as Traditional Multi-Container RAG Pipeline
     participant VORTEX as Botmartz VORTEX
 
-    Note over User,RAGFlow: Case A: RAGFlow Pre-embedding Text Search
-    User->>RAGFlow: "What is the total VRAM across nodes?"
-    RAGFlow->>RAGFlow: Vector search retrieves Markdown chunk: "| node | vram |..."
-    RAGFlow->>LLM: "Here is table markdown: calculate total"
+    Note over User,Traditional Multi-Container RAG: Case A: Traditional Multi-Container RAG Pre-embedding Text Search
+    User->>Traditional Multi-Container RAG: "What is the total VRAM across nodes?"
+    Traditional Multi-Container RAG->>Traditional Multi-Container RAG: Vector search retrieves Markdown chunk: "| node | vram |..."
+    Traditional Multi-Container RAG->>LLM: "Here is table markdown: calculate total"
     LLM-->>User: Hallucinated / Miscalculated sum: "Total is 64 GB" (Error!)
 
     Note over User,VORTEX: Case B: VORTEX Deterministic KAG
@@ -143,13 +143,13 @@ sequenceDiagram
     Sentinel-->>User: "Total VRAM is 120 GB (Verified from 3 database rows)"
 ```
 
-- **Accuracy**: RAGFlow accuracy on multi-row aggregations is bounded by LLM arithmetic hallucination (~60–75%). VORTEX accuracy is **100% deterministic**.
+- **Accuracy**: Traditional Multi-Container RAG accuracy on multi-row aggregations is bounded by LLM arithmetic hallucination (~60–75%). VORTEX accuracy is **100% deterministic**.
 
 ---
 
 ### 3.5 Latency: Uncached RAG vs SGLang RadixAttention CAG
 
-- **RAGFlow**: Every incoming query constructs a new prompt from scratch. The inference engine recomputes the key-value (KV) states for the system prompt, instructions, and corpus context.
+- **Traditional Multi-Container RAG**: Every incoming query constructs a new prompt from scratch. The inference engine recomputes the key-value (KV) states for the system prompt, instructions, and corpus context.
 - **VORTEX**: Organizes static context into a deterministic hierarchy of `CAGPrefixBlock` tokens:
   1. `Tier 0`: System Instructions & Persona.
   2. `Tier 1`: Document Corpus Skeletons (AST Table of Contents).
@@ -164,7 +164,7 @@ Running the automated verification test suite (`python/tests/test_engine.py` and
 
 1. **Memory Baseline**:
    - VORTEX idle memory: **412 MB** total resident set size (RSS).
-   - RAGFlow idle memory: **11.4 GB** across 14 Docker containers.
+   - Traditional Multi-Container RAG idle memory: **11.4 GB** across 14 Docker containers.
    - **Savings**: **96.4% reduction in memory overhead**.
 2. **Tabular Calculation**:
    - VORTEX DuckDB SQL executed in **1.8 ms** with 0% error rate.
@@ -177,7 +177,7 @@ Running the automated verification test suite (`python/tests/test_engine.py` and
 
 ## 5. Conclusion & Strategic Recommendation
 
-Botmartz VORTEX completely surpasses `infiniflow/ragflow` across deployability, resource efficiency, retrieval precision, and mathematical determinism. All enterprise deployments should standardize on the **VORTEX** stack.
+Botmartz VORTEX completely surpasses `legacy multi-container RAG stacks` across deployability, resource efficiency, retrieval precision, and mathematical determinism. All enterprise deployments should standardize on the **VORTEX** stack.
 
 ---
 
@@ -186,7 +186,7 @@ Botmartz VORTEX completely surpasses `infiniflow/ragflow` across deployability, 
 - **[[01-Architecture-Specs/01-H-RAG-and-Merkle-AST|01 — H-RAG Hierarchical AST & BLAKE3 Merkle Versioning]]**
 - **[[01-Architecture-Specs/02-JEV-Late-Chunking|02 — JEV Late Chunking Specification]]**
 - **[[01-Architecture-Specs/03-CAG-and-KAG-Hybrid-Engine|03 — CAG Radix KV-Cache & DuckDB KAG Engine]]**
-- **[[01-Architecture-Specs/05-Botmartz-DNA-and-RAGFlow-Replacement|05 — Botmartz DNA & RAGFlow Replacement Blueprint]]**
+- **[[01-Architecture-Specs/05-Botmartz-DNA-and-Traditional Multi-Container RAG-Replacement|05 — Botmartz DNA & Traditional Multi-Container RAG Replacement Blueprint]]**
 - **[[01-Architecture-Specs/06-Docling-OCR-and-Vision-AST|06 — Docling OCR & Vision AST Layout Parser]]**
 - **[[01-Architecture-Specs/07-A2A-and-MCP-Protocol-Mesh|07 — A2A & MCP Protocol Mesh]]**
 - **[[04-Daily-Logs/2026-11-14-Full-VORTEX-Engine-Build-and-Test|2026-11-14 — Full VORTEX Engine Build & Test Log]]**

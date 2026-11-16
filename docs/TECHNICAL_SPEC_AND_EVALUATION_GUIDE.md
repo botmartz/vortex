@@ -9,7 +9,7 @@
 
 ## Part 1: In Plain English — Why Does VORTEX Exist?
 
-If you have ever tried building or hosting a production RAG system (using tools like RAGFlow, Dify, or complex LangChain setups), you have likely run into three major roadblocks:
+If you have ever tried building or hosting a production RAG system (using tools like Traditional Multi-Container RAG, Dify, or complex LangChain setups), you have likely run into three major roadblocks:
 
 1. **The Infrastructure Nightmare:**  
    Most systems require 7 to 14 separate Docker containers just to test a single query (Elasticsearch, Redis, MinIO, MySQL, Celery workers). If you run them on a laptop, your computer slows to a crawl (8–16 GB of RAM taken up while idle).  
@@ -35,7 +35,7 @@ Copy and send this directly to your friends, colleagues, or developer groups:
 ```text
 Hey! We just open-sourced our in-house AI engine at Botmartz, called VORTEX, and I’d love for you to test it out and give me your honest feedback.
 
-In short: it’s an Omni-RAG engine that replaces heavy 14-container setups (like RAGFlow and Dify) with a single process that uses under 500MB of RAM.
+In short: it’s an Omni-RAG engine that replaces heavy 14-container setups (like Traditional Multi-Container RAG and Dify) with a single process that uses under 500MB of RAM.
 
 Why you'll find it interesting:
 - Zero math hallucinations: It has an embedded DuckDB SQL engine inside it. When you query tables or financial sheets, it runs actual SQL queries instead of letting the LLM guess the math.
@@ -136,4 +136,4 @@ When sending this to evaluators, ask them to test these 3 concrete scenarios:
 - [ ] **Scenario B: The Document Edit Test**  
   Upload a Markdown file or PDF. Make a small edit in one section and re-upload with version 2. Check the telemetry to see the Merkle diff skip unchanged nodes.
 - [ ] **Scenario C: The Live Duel Benchmark**  
-  Click the **RAGFlow Live Duel** tab in the UI (`http://127.0.0.1:8420`), run the benchmark query, and review the side-by-side latency, memory footprint, and citation telemetry.
+  Click the **Traditional Multi-Container RAG Live Duel** tab in the UI (`http://127.0.0.1:8420`), run the benchmark query, and review the side-by-side latency, memory footprint, and citation telemetry.

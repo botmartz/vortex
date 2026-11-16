@@ -23,13 +23,13 @@ Whenever retrieved H-RAG AST spans or DuckDB KAG SQL rows lack sufficient entail
 """
 
 
-RAGFLOW_VS_VORTEX_SPEC = """# Infiniflow RAGFlow vs Botmartz VORTEX Architectural Benchmark
-Botmartz VORTEX was engineered after deep analysis of infiniflow/ragflow to eliminate container sprawl, chunk context blindness, and full-file re-indexing overhead.
+TRADITIONAL_RAG_VS_VORTEX_SPEC = """# Multi-Container Traditional RAG vs Botmartz VORTEX Architectural Benchmark
+Botmartz VORTEX was engineered to eliminate multi-container sprawl, chunk context blindness, and full-file re-indexing overhead found in traditional legacy RAG pipelines.
 
 ## 1. Benchmark Comparison Matrix
 | engine_name | runtime_containers | idle_ram_footprint | chunking_method | mutation_diff_complexity | tabular_kag_backend | kv_prefix_caching |
 | --- | --- | --- | --- | --- | --- | --- |
-| infiniflow_ragflow | 14 | 8 to 16 GB RAM | Pre-Embedding Flat/DeepDoc | Full Re-Index O(N) | LLM Text Approximation | None |
+| legacy_multi_container_rag | 14 | 8 to 16 GB RAM | Pre-Embedding Flat Chunking | Full Re-Index O(N) | LLM Text Approximation | None |
 | botmartz_vortex | 1 | Under 500 MB | H-RAG AST + JEV Late Chunking | BLAKE3 Merkle O(k log N) | Embedded DuckDB OLAP SQL | SGLang RadixAttention CAG |
 
 ## 2. Production SLA & Latency Targets
@@ -46,8 +46,8 @@ def seed_default_corpus(engine_graph: BotmartzDelegationGraph) -> None:
             version=1,
         )
         engine_graph.ingest_markdown(
-            doc_id="ragflow_benchmark",
-            uri="vault://benchmarks/ragflow_vs_vortex.md",
-            markdown_text=RAGFLOW_VS_VORTEX_SPEC,
+            doc_id="architecture_benchmark",
+            uri="vault://benchmarks/traditional_vs_vortex.md",
+            markdown_text=TRADITIONAL_RAG_VS_VORTEX_SPEC,
             version=1,
         )

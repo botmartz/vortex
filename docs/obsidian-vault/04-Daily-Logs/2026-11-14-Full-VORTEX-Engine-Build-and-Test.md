@@ -152,12 +152,12 @@ python/tests/test_engine.py ...                                          [100%]
   - `01-Architecture-Specs/02-JEV-Late-Chunking.md`
   - `01-Architecture-Specs/03-CAG-and-KAG-Hybrid-Engine.md`
   - `01-Architecture-Specs/04-Agent-Delegation-Graph-and-MCP.md`
-  - `01-Architecture-Specs/05-Botmartz-DNA-and-RAGFlow-Replacement.md`
+  - `01-Architecture-Specs/05-Botmartz-DNA-and-Traditional Multi-Container RAG-Replacement.md`
   - `01-Architecture-Specs/06-Docling-OCR-and-Vision-AST.md`
   - `01-Architecture-Specs/07-A2A-and-MCP-Protocol-Mesh.md`
   - `01-Architecture-Specs/08-Skills-and-Subagents-Catalog.md`
 - **Technical RFCs**:
-  - `02-RFCs/RFC-001-Surpassing-RAGFlow-Benchmark.md`
+  - `02-RFCs/RFC-001-Surpassing-Traditional Multi-Container RAG-Benchmark.md`
 - **Maps of Content**:
   - `00-MOC/System-Architecture-MOC.md`
 - **Skills Catalog**:

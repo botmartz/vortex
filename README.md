@@ -152,14 +152,14 @@ VORTEX operates alongside our specialized companion repositories:
 
 ---
 
-## 🔬 Side-by-Side Benchmarking: Test Both VORTEX & RAGFlow
+## 🔬 Side-by-Side Benchmarking: VORTEX vs. Traditional Multi-Container RAG
 
-We believe the best way for developers to evaluate retrieval architectures is through open, empirical testing. 
+We believe the best way for developers to evaluate retrieval architectures is through open, empirical testing on real hardware.
 
-Infiniflow's **RAGFlow** is an impressive platform with strong deep document vision capabilities. In VORTEX Studio, we included a built-in **Live Duel & Benchmark Tab** where developers can run side-by-side queries across both architectural approaches:
-- **Try RAGFlow**: Test how full-document re-indexing and deep vision parsing perform on your document set.
-- **Try VORTEX**: Compare how $O(\Delta)$ Merkle diffing and in-memory DuckDB OLAP SQL handle the same workload.
-- **Benchmark Metrics**: Inspect latency, memory footprint, and numerical query precision on your own hardware.
+In VORTEX Studio, we included a built-in **Live Architecture Benchmark Tab** where developers can run side-by-side queries across both architectural approaches:
+- **Traditional Multi-Container Baseline**: Test how conventional multi-container flat-chunking and text approximation handle technical queries.
+- **Botmartz VORTEX**: Compare how $O(\Delta)$ Merkle diffing, native VeriFAI™ grounding, and in-memory DuckDB OLAP SQL handle the exact same workload.
+- **Benchmark Metrics**: Inspect latency, memory footprint (<500MB vs 8–16GB), and numerical query precision on your own hardware.
 
 ---
 

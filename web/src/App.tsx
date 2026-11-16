@@ -467,7 +467,7 @@ export default function App() {
           <div className="card">
             <div className="card-title">Side-by-Side Architecture Benchmark</div>
             <p style={{ color: "var(--ink-secondary)", marginBottom: 16, fontSize: 13.5 }}>
-              Compare query execution between a baseline multi-container flat-chunking architecture (RAGFlow reference) and Botmartz VORTEX on identical hardware.
+              Compare query execution between a baseline multi-container flat-chunking architecture and Botmartz VORTEX on identical hardware.
             </p>
 
             <div className="field-group">
@@ -491,7 +491,7 @@ export default function App() {
                     <thead>
                       <tr>
                         <th>Architectural Dimension</th>
-                        <th>Multi-Container Baseline (RAGFlow Reference)</th>
+                        <th>Multi-Container Baseline (Traditional RAG)</th>
                         <th>Botmartz VORTEX v1.0</th>
                       </tr>
                     </thead>
